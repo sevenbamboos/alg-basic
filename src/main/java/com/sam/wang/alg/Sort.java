@@ -3,7 +3,7 @@ package com.sam.wang.alg;
 public class Sort {
 
   public static Comparable[] selectSort(Comparable[] a) {
-    Comparable[] t = clone(a);;
+    Comparable[] t = clone(a);
 
     for (int i = 0; i < t.length; i++) {
 
@@ -24,6 +24,26 @@ public class Sort {
     return t;
   }
 
+  public static Comparable[] insertSort(Comparable[] a) {
+    Comparable[] t = clone(a);
+
+    for (int i = 1; i < t.length; i++) {
+
+      for (int j = i; j > 0; j--) {
+        if (t[j].compareTo(t[j-1]) < 0) {
+          Comparable tmp = t[j-1];
+          t[j-1] = t[j];
+          t[j] = tmp;
+        } else {
+          break;
+        }
+      }
+
+    }
+
+    return t;
+  }
+
   private static Comparable[] clone(Comparable[] a) {
     return a.clone();
   }
@@ -32,6 +52,12 @@ public class Sort {
     Integer[] a = {6,7,5,4,1,9,8,3,2};
     Comparable[] t = selectSort(a);
     for (Comparable ti : t) {
+      System.out.print(ti);
+    }
+    System.out.println();
+
+    Comparable[] t2 = insertSort(a);
+    for (Comparable ti : t2) {
       System.out.print(ti);
     }
   }
