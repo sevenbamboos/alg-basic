@@ -7,6 +7,7 @@ public class Sort {
 
     for (int i = 0; i < t.length; i++) {
 
+      // find the smallest item from ith
       Comparable min = t[i];
       int jj = i;
       for (int j = i+1; j < t.length; j++) {
@@ -16,6 +17,7 @@ public class Sort {
         }
       }
 
+      // exchange the ith with the smallest
       t[jj] = t[i];
       t[i] = min;
 
@@ -29,6 +31,7 @@ public class Sort {
 
     for (int i = 1; i < t.length; i++) {
 
+      // insert the ith into the right place of 0..<i
       for (int j = i; j > 0; j--) {
         if (t[j].compareTo(t[j-1]) < 0) {
           Comparable tmp = t[j-1];
