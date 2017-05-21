@@ -11,8 +11,11 @@ public enum Sort {
   }
 
   public enum Strategy {
-    SELECT, INSERT, SHELL;
+    SELECT, INSERT, SHELL, MERGE;
   }
+
+  private static final boolean SHOW_ARRAY_BEFORE_SORT = false;
+  private static final boolean SHOW_ARRAY_AFTER_SORT = false;
 
   private static boolean isLess(Comparable i1, Comparable i2) {
     return i1.compareTo(i2) < 0;
@@ -27,6 +30,7 @@ public enum Sort {
   private static void print(Comparable[] a) {
     for (int i = 0; i < a.length; i++) {
       System.out.print(a[i]);
+      System.out.print(',');
     }
   }
 
@@ -48,6 +52,8 @@ public enum Sort {
         return insertSort(clone(t));
       case SHELL:
         return shellSort(clone(t));
+      case MERGE:
+        return mergeSort(clone(t));
       default:
         throw new IllegalArgumentException("Unknown strategy:" + strategy);
     }
@@ -86,16 +92,15 @@ public enum Sort {
 
   private Comparable[] shellSort(Comparable[] t) {
     int pace = 1, length = t.length;
-    while (3*pace < length) pace++;
+
+    while (pace < length/3) pace = 3*pace + 1;
 
     while (pace > 0) {
 
-      for (int i = 0; i <= length/pace + 1; i++) {
-        for (int j = i + pace; j < length; j += pace) {
-          for (int k = j; k >= pace; k -= pace) {
-            if (isLess(t[k], t[k-pace])) {
-              exchange(t, k, k-pace);
-            }
+      for (int j = 0; j < length; j += pace) {
+        for (int k = j; k >= pace; k -= pace) {
+          if (isLess(t[k], t[k-pace])) {
+            exchange(t, k, k-pace);
           }
         }
       }
@@ -103,14 +108,64 @@ public enum Sort {
       //System.out.println("\npace:" + pace);
       //print(t);
 
-      pace--;
+      pace = pace / 3;
     }
 
     return t;
   }
+  
+  private Comparable[] mergeSort(Comparable[] t) {
+    doMergeSort(t, 0, t.length-1, new Comparable[t.length]);
+    return t;
+  }
+  
+  private void doMergeSort(Comparable[] t, int lo, int hi, Comparable[] buff) {
+    if (lo >= hi) {
+      return;
+    }
+    int mid = (lo + hi) / 2;
+    doMergeSort(t, lo, mid, buff);
+    doMergeSort(t, mid+1, hi, buff);
+    merge(t, lo, mid, hi, buff);
+  }
+  
+  private void merge(Comparable[] t, int lo, int mi, int hi, Comparable[] buff) {
+
+    if (lo >= hi) {
+      return;
+    }
+
+    //System.out.println(String.format("merge lo:%s, mi:%s, hi:%s", lo, mi, hi));
+
+    int index1 = lo, index2 = mi+1, len = hi - lo + 1;
+    for (int i = 0; i < len; i++) {
+
+      if (index1 > mi && index2 <= hi) {
+        buff[lo + i] = t[index2++];
+      } else if (index1 <= mi && index2 > hi) {
+        buff[lo + i] = t[index1++];
+      } else if (index1 <= mi && index2 <= hi) {
+        if (isLess(t[index1], t[index2])) {
+          buff[lo + i] = t[index1++];
+        } else {
+          buff[lo + i] = t[index2++];
+        }
+      } else {
+        // not possible
+        throw new RuntimeException();
+      }
+    }
+
+    for (int i = 0; i < len; i++) {
+      t[i+lo] = buff[lo + i];
+    }
+
+  }
 
   private static Comparable[] clone(Comparable[] a) {
-    return a.clone();
+    Comparable[] t = new Comparable[a.length];
+    System.arraycopy(a, 0, t, 0, a.length);
+    return t;
   }
 
   private static void test(Comparable[] a, Function<Comparable[], Comparable[]> sorting) {
@@ -121,6 +176,12 @@ public enum Sort {
       System.out.println("\nFailed");
       return;
     }
+
+    if (SHOW_ARRAY_AFTER_SORT) {
+      System.out.println("After sort");
+      print(t);
+    }
+
     System.out.println("\nIt took " + (System.currentTimeMillis() - start) / 1000.0);
   }
 
@@ -145,7 +206,12 @@ public enum Sort {
 
   public static void main(String[] args) {
 
-    Comparable[] a = randomArray(5000);
+    Comparable[] a = randomArray(40000);
+
+    if (SHOW_ARRAY_BEFORE_SORT) {
+      System.out.println("Before sort");
+      print(a);
+    }
 
     System.out.println("\nSelect sort:");
     test(a, src->Sort.getInstance().sort(src, Strategy.SELECT));
@@ -155,6 +221,9 @@ public enum Sort {
 
     System.out.println("\nShell sort:");
     test(a, src->Sort.getInstance().sort(src, Strategy.SHELL));
+
+    System.out.println("\nMerge sort:");
+    test(a, src->Sort.getInstance().sort(src, Strategy.MERGE));
   }
 }
 
