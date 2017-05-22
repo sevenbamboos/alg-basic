@@ -1,36 +1,21 @@
 package com.sam.wang.alg;
 
+import static com.sam.wang.alg.Util.*;
+
 import com.google.common.collect.Lists;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-public enum Sort {
-
-  INSTANCE;
-
-  private static final boolean SHOW_ARRAY_BEFORE_SORT = false;
-  private static final boolean SHOW_ARRAY_AFTER_SORT = false;
-
-  public static Sort getInstance() {
-    return INSTANCE;
-  }
+public class Sort {
 
   public enum Strategy {
     SELECT, INSERT, SHELL, MERGE, QUICK, SYSTEM;
-  }
-
-  private static boolean isLess(Comparable i1, Comparable i2) {
-    return i1.compareTo(i2) < 0;
-  }
-
-  private static void exchange(Comparable[] a, int i1, int i2) {
-    if (i1 == i2) return;
-
-    Comparable tmp = a[i1];
-    a[i1] = a[i2];
-    a[i2] = tmp;
   }
 
   private static void print(Comparable[] a) {
@@ -49,7 +34,7 @@ public enum Sort {
     return true;
   }
 
-  public Comparable[] sort(Comparable[] a, Strategy strategy) {
+  public static Comparable[] sort(Comparable[] a, Strategy strategy) {
     Comparable[] t = a;
     switch (strategy) {
       case SELECT:
@@ -69,12 +54,12 @@ public enum Sort {
     }
   }
 
-  private Comparable[] systemSort(Comparable[] t) {
+  private static Comparable[] systemSort(Comparable[] t) {
     Arrays.sort(t);
     return t;
   }
 
-  private Comparable[] selectSort(Comparable[] t) {
+  private static Comparable[] selectSort(Comparable[] t) {
     for (int i = 0; i < t.length; i++) {
 
       // find the smallest item from ith
@@ -93,7 +78,7 @@ public enum Sort {
     return t;
   }
 
-  private Comparable[] insertSort(Comparable[] t) {
+  private static Comparable[] insertSort(Comparable[] t) {
     for (int i = 1; i < t.length; i++) {
       // insert the ith into the right place of 0..<i
       for (int j = i; j > 0; j--) {
@@ -105,7 +90,7 @@ public enum Sort {
     return t;
   }
 
-  private Comparable[] shellSort(Comparable[] t) {
+  private static Comparable[] shellSort(Comparable[] t) {
     int pace = 1, length = t.length;
 
     while (pace < length/3) pace = 3*pace + 1;
@@ -129,12 +114,12 @@ public enum Sort {
     return t;
   }
 
-  private Comparable[] mergeSort(Comparable[] t) {
+  private static Comparable[] mergeSort(Comparable[] t) {
     doMergeSort(t, 0, t.length-1, new Comparable[t.length]);
     return t;
   }
   
-  private void doMergeSort(Comparable[] t, int lo, int hi, Comparable[] buff) {
+  private static void doMergeSort(Comparable[] t, int lo, int hi, Comparable[] buff) {
     if (lo >= hi) {
       return;
     }
@@ -144,7 +129,7 @@ public enum Sort {
     merge(t, lo, mid, hi, buff);
   }
   
-  private void merge(Comparable[] t, int lo, int mi, int hi, Comparable[] buff) {
+  private static void merge(Comparable[] t, int lo, int mi, int hi, Comparable[] buff) {
 
     if (lo >= hi) {
       return;
@@ -177,12 +162,12 @@ public enum Sort {
 
   }
 
-  private Comparable[] quickSort(Comparable[] t) {
+  private static Comparable[] quickSort(Comparable[] t) {
     doQuickSort(t, 0, t.length-1);
     return t;
   }
 
-  private void doQuickSort(Comparable[] t, int lo, int hi) {
+  private static void doQuickSort(Comparable[] t, int lo, int hi) {
     if (lo >= hi) {
       return;
     }
@@ -192,7 +177,7 @@ public enum Sort {
     doQuickSort(t, anchor+1, hi);
   }
 
-  private int makePartition(Comparable[] t, int lo, int hi, int sp) {
+  private static int makePartition(Comparable[] t, int lo, int hi, int sp) {
     exchange(t, lo, sp);
     Comparable anchor = t[lo];
 
@@ -228,77 +213,62 @@ public enum Sort {
     return t;
   }
 
-  private static void test(Comparable[] a, Function<Comparable[], Comparable[]> sorting) {
-    long start = System.currentTimeMillis();
-    Comparable[] t = sorting.apply(a);
-    if (!isSorted(t)) {
-      print(t);
-      throw new RuntimeException("Sort Failed");
+  private static void testSortPerformance(int testDataLen, int testRounds, Strategy... strategies) {
+    List<Comparable[]> testData = generateRandomArray(testDataLen, testRounds);
+
+    Function<Comparable[], Boolean> validator = Sort::isSorted;
+    Function<Comparable[], String> stringConvertor = (x)->{
+      return Arrays.asList(x).stream().map(y->y.toString()).reduce("", (prev, item)->prev + "," + item);
+    };
+
+    List<Runner> allRunners = new ArrayList<>();
+    for (Strategy strategy : strategies) {
+      Runner runner = new Runner(strategy.name(), false);
+      allRunners.add(runner);
+      for (int i = 0; i < testRounds; i++) {
+        runner.run(sort(strategy, testData.iterator()), validator, stringConvertor);
+      }
     }
 
-    if (SHOW_ARRAY_AFTER_SORT) {
-      System.out.println("After sort");
-      print(t);
-    }
-
-    System.out.println("\nIt took " + (System.currentTimeMillis() - start) / 1000.0);
-  }
-
-  private static Comparable[] convertArray(String inputWithComma) {
-    return Arrays.asList(inputWithComma.split(",")).stream()
-        .map(x->Integer.parseInt(x))
-        .collect(Collectors.toList())
-        .toArray(new Comparable[0]);
-  }
-
-  private static Comparable[] randomArray(int len) {
-    Comparable[] t = new Comparable[len];
-    for (int i = 0; i < t.length; i++) {
-      t[i] = i;
-    }
-    shuffle(t);
-    return t;
-  }
-
-  private static void shuffle(Comparable[] a) {
-    for (int i = 0; i < a.length; i++) {
-      exchange(a, i, random(0, i));
+    System.out.println(String.format("[Test data] len=%d,\trounds=%d", testDataLen, testRounds));
+    for (Runner runner : allRunners) {
+      System.out.println(runner.briefInfo());
     }
   }
 
-  private static int random(int lo, int hi) {
-    return (int) Math.floor(Math.random() * (hi - lo)) + lo;
+  private static Supplier<Comparable[]> sort(Strategy strategy, Iterator<Comparable[]> dataIte) {
+    return ()->{
+      if (dataIte.hasNext()) {
+        return Sort.sort(dataIte.next(), strategy);
+      }
+      return new Comparable[0];
+    };
+  }
+
+  private static List<Comparable[]> generateRandomArray(int arrayLen, int arraySize) {
+    Iterator<Comparable[]> ite = Util.arrayGenerator(arrayLen);
+    List<Comparable[]> result = new ArrayList<>(arraySize);
+    for (int i = 0; i < arraySize; i++) {
+      result.add(ite.next());
+    }
+    return result;
   }
 
   public static void main(String[] args) {
 
-    Comparable[] a =
-        //convertArray("8,9,4,6,5,7,2,0,1,3");
-        //convertArray("4,3,8,0,9,6,2,1,7,5");
-      randomArray(80000);
-
-    if (SHOW_ARRAY_BEFORE_SORT) {
-      System.out.println("Before sort");
-      print(a);
+    int i = 5000;
+    while (i <= 40000) {
+      testSortPerformance(i, 10, Strategy.values());
+      i += 5000;
     }
 
-    System.out.println("\nSelect sort:");
-    test(a, src->Sort.getInstance().sort(src, Strategy.SELECT));
+    // from here, data becomes too large for n^2 strategies
+    Strategy[] strategyInNlgN = {Strategy.MERGE, Strategy.QUICK, Strategy.SYSTEM};
+    while (i < 2560000) {
+      testSortPerformance(i, 10, Strategy.MERGE, Strategy.QUICK, Strategy.SYSTEM);
+      i *= 2;
+    }
 
-    System.out.println("\nInsert sort:");
-    test(a, src->Sort.getInstance().sort(src, Strategy.INSERT));
-
-    System.out.println("\nShell sort:");
-    test(a, src->Sort.getInstance().sort(src, Strategy.SHELL));
-
-    System.out.println("\nMerge sort:");
-    test(a, src->Sort.getInstance().sort(src, Strategy.MERGE));
-
-    System.out.println("\nQuick sort:");
-    test(a, src->Sort.getInstance().sort(src, Strategy.QUICK));
-
-    System.out.println("\nSystem sort:");
-    test(a, src->Sort.getInstance().sort(src, Strategy.SYSTEM));
   }
 }
 

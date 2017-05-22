@@ -39,7 +39,7 @@ public class Runner {
     }
 
     if (isVerbose) {
-      System.out.println(String.format("It took %.3f", last/1000.0));
+      System.out.println(String.format("It took %.3f\n", last/1000.0));
     }
 
     records.add(last);
@@ -66,12 +66,43 @@ public class Runner {
         (result, element) -> result + element);
   }
 
+  public String briefInfo() {
+    return String.format("[Runner %s]\t min:%.3f, max:%.3f, mean:%.3f", name, min()/1000.0, max()/1000.0, mean()/1000.0);
+  }
+
   public double stdev() {
     // TODO
     return 0;
   }
 
   public static void main(String[] args) {
+    Runner testRunner = new Runner("test", true);
+    testRunner.run(
+        ()->{
+          try {
+            Thread.sleep(1000);
+          } catch (InterruptedException e) {
+            e.printStackTrace();
+          }
+          return "1 Done";
+        },
+        (x)->true,
+        (y)->"1 Done"
+    );
 
+    testRunner.run(
+        ()->{
+          try {
+            Thread.sleep(1000);
+          } catch (InterruptedException e) {
+            e.printStackTrace();
+          }
+          return "2 Done";
+        },
+        (x)->true,
+        (y)->"2 Done"
+    );
+
+    System.out.println(testRunner.briefInfo());
   }
 }
