@@ -4,10 +4,7 @@ import static com.sam.wang.alg.Util.*;
 
 import com.google.common.collect.Lists;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -55,7 +52,12 @@ public class Sort {
   }
 
   private static Comparable[] systemSort(Comparable[] t) {
-    Arrays.sort(t);
+    Arrays.sort(t, new Comparator<Comparable>() {
+      @Override
+      public int compare(Comparable o1, Comparable o2) {
+        return o1.compareTo(o2);
+      }
+    });
     return t;
   }
 
@@ -230,10 +232,30 @@ public class Sort {
       }
     }
 
-    System.out.println(String.format("[Test data] len=%d,\trounds=%d", testDataLen, testRounds));
+    //System.out.println(String.format("[Test data] len=%d,\trounds=%d", testDataLen, testRounds));
+    printRunnerInfo(allRunners);
+
+  }
+
+  private static void printRunnerInfo(List<Runner> allRunners) {
+    /*
     for (Runner runner : allRunners) {
       System.out.println(runner.briefInfo());
     }
+    */
+
+    /*
+    for (Runner runner : allRunners) {
+      System.out.print(runner.getName() + "\t");
+    }
+    System.out.println();
+    */
+
+    for (Runner runner : allRunners) {
+      System.out.print(String.format("%.0f\t", runner.mean()));
+    }
+    System.out.println();
+
   }
 
   private static Supplier<Comparable[]> sort(Strategy strategy, Iterator<Comparable[]> dataIte) {
@@ -256,17 +278,20 @@ public class Sort {
 
   public static void main(String[] args) {
 
+    /*
     int i = 5000;
-    while (i <= 40000) {
+    while (i < 50000) {
       testSortPerformance(i, 10, Strategy.values());
       i += 5000;
     }
+    */
 
     // from here, data becomes too large for n^2 strategies
+    int j = 50000;
     Strategy[] strategyInNlgN = {Strategy.MERGE, Strategy.QUICK, Strategy.SYSTEM};
-    while (i < 2560000) {
-      testSortPerformance(i, 10, Strategy.MERGE, Strategy.QUICK, Strategy.SYSTEM);
-      i *= 2;
+    while (j < 5000000) {
+      testSortPerformance(j, 10, Strategy.MERGE, Strategy.QUICK, Strategy.SYSTEM);
+      j *= 2;
     }
 
   }

@@ -70,6 +70,10 @@ public class Runner {
     return String.format("[Runner %s]\t min:%.3f, max:%.3f, mean:%.3f", name, min()/1000.0, max()/1000.0, mean()/1000.0);
   }
 
+  public String getName() {
+    return this.name;
+  }
+
   public double stdev() {
     // TODO
     return 0;
