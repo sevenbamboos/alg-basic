@@ -7,15 +7,11 @@ public class PriorityQueue {
 
   private Comparator comparator;
   private Comparable[] items;
-  private int lastIndex;
+  private int lastIndex = 0;
 
-  public PriorityQueue(Comparator comparator) {
+  public PriorityQueue(Comparator comparator, int size) {
     this.comparator = comparator;
-
-    // TODO how to give a reasonable initial site
-    items = new Comparable[100];
-
-    lastIndex = 0;
+    items = new Comparable[size+1];
   }
 
   public boolean isEmpty() {
@@ -38,7 +34,7 @@ public class PriorityQueue {
     int parentIndex = parentIndex(i);
     if (parentIndex == 0) return;
     Comparable parentItem = getItemAt(parentIndex).get();
-    if (isLarger(getItemAt(i).get(), parentItem)) {
+    if (isBetter(getItemAt(i).get(), parentItem)) {
       exchange(items, i, parentIndex);
       swim(parentIndex);
     }
@@ -79,24 +75,24 @@ public class PriorityQueue {
     if (!leftItem.isPresent() && !rightItem.isPresent()) {
       return;
     } else if (leftItem.isPresent() && !rightItem.isPresent()) {
-      if (isLarger(leftItem.get(), item.get())) {
+      if (isBetter(leftItem.get(), item.get())) {
         exch = left;
       }
     } else if (!leftItem.isPresent() && rightItem.isPresent()) {
-      if (isLarger(rightItem.get(), item.get())) {
+      if (isBetter(rightItem.get(), item.get())) {
         exch = right;
       }
     } else {
 
-      int largerIndex = left;
-      Comparable larger = leftItem.get();
-      if (isLarger(rightItem.get(), leftItem.get())) {
-        largerIndex = right;
-        larger = right;
+      int betterIndex = left;
+      Comparable better = leftItem.get();
+      if (isBetter(rightItem.get(), leftItem.get())) {
+        betterIndex = right;
+        better = rightItem.get();
       }
 
-      if (isLarger(larger, item.get())) {
-        exch = largerIndex;
+      if (isBetter(better, item.get())) {
+        exch = betterIndex;
       }
     }
 
@@ -106,11 +102,11 @@ public class PriorityQueue {
     }
   }
 
-  private boolean isLarger(Comparable c1, Comparable c2) {
+  private boolean isBetter(Comparable c1, Comparable c2) {
     return comparator.compare(c1, c2) > 0;
   }
 
-  private boolean isSmaller(Comparable c1, Comparable c2) {
+  private boolean isWorse(Comparable c1, Comparable c2) {
     return comparator.compare(c1, c2) < 0;
   }
 
@@ -167,22 +163,24 @@ public class PriorityQueue {
   }
 
   public static void main(String[] args) {
-    //testSimpleAddAndPop();
-    testFailureFromSimpleTest("1,3,9,7,2,8,4,5,6,0,");
+    testSimpleAddAndPop();
+    //testFailureFromSimpleTest("1,3,9,7,2,8,4,5,6,0,");
   }
 
   public static Comparator MAX = (c1, c2)->((Comparable)c1).compareTo(c2);
   public static Comparator MIN = (c1, c2)->((Comparable)c2).compareTo(c1);
 
   public static Comparable[] heapSort(Comparable[] a) {
-    PriorityQueue pq = new PriorityQueue(MIN);
+    PriorityQueue pq = new PriorityQueue(MIN, a.length);
     pq.addAll(a);
-    List<Comparable> dumpList = new ArrayList<>();
+
+    Comparable[] result = new Comparable[a.length];
+    int i = 0;
     while (!pq.isEmpty()) {
-      dumpList.add(pq.pop().get());
+      result[i++] = pq.pop().get();
     }
 
-    return dumpList.toArray(new Comparable[0]);
+    return result;
   }
 
   private static void testFailureFromSimpleTest(String s) {
@@ -196,7 +194,7 @@ public class PriorityQueue {
 
   private static void testSimpleAddAndPop() {
 
-    Iterator<Comparable[]> ite = arrayGenerator(10);
+    Iterator<Comparable[]> ite = arrayGenerator(100);
     int round = 10, passed = 0;
 
     for (int i = 0; i < round; i++) {

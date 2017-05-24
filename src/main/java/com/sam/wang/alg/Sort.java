@@ -3,6 +3,7 @@ package com.sam.wang.alg;
 import static com.sam.wang.alg.Util.*;
 
 import com.google.common.collect.Lists;
+import javafx.scene.layout.Priority;
 
 import java.util.*;
 import java.util.function.Function;
@@ -12,7 +13,7 @@ import java.util.stream.Collectors;
 public class Sort {
 
   public enum Strategy {
-    SELECT, INSERT, SHELL, MERGE, QUICK, SYSTEM;
+    SELECT, INSERT, SHELL, HEAP, MERGE, QUICK, SYSTEM;
   }
 
   public static Comparable[] sort(Comparable[] a, Strategy strategy) {
@@ -24,6 +25,8 @@ public class Sort {
         return insertSort(clone(t));
       case SHELL:
         return shellSort(clone(t));
+      case HEAP:
+        return heapSort(clone(t));
       case MERGE:
         return mergeSort(clone(t));
       case QUICK:
@@ -33,6 +36,10 @@ public class Sort {
       default:
         throw new IllegalArgumentException("Unknown strategy:" + strategy);
     }
+  }
+
+  private static Comparable[] heapSort(Comparable[] t) {
+    return PriorityQueue.heapSort(t);
   }
 
   private static Comparable[] systemSort(Comparable[] t) {
@@ -262,21 +269,21 @@ public class Sort {
 
   public static void main(String[] args) {
 
-    /*
     int i = 5000;
     while (i < 50000) {
       testSortPerformance(i, 10, Strategy.values());
       i += 5000;
     }
-    */
 
-    // from here, data becomes too large for n^2 strategies
+    // from here, data becomes too large for n^2 strategies (except heap sort)
+    /*
     int j = 50000;
     Strategy[] strategyInNlgN = {Strategy.MERGE, Strategy.QUICK, Strategy.SYSTEM};
     while (j < 5000000) {
       testSortPerformance(j, 10, Strategy.MERGE, Strategy.QUICK, Strategy.SYSTEM);
       j *= 2;
     }
+    */
 
   }
 }
