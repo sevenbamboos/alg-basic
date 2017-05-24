@@ -15,22 +15,6 @@ public class Sort {
     SELECT, INSERT, SHELL, MERGE, QUICK, SYSTEM;
   }
 
-  private static void print(Comparable[] a) {
-    for (int i = 0; i < a.length; i++) {
-      System.out.print(a[i]);
-      System.out.print(',');
-    }
-  }
-
-  private static boolean isSorted(Comparable[] a) {
-    for (int i = 0; i < a.length - 1; i++) {
-      if (!isLess(a[i], a[i+1])) {
-        return false;
-      }
-    }
-    return true;
-  }
-
   public static Comparable[] sort(Comparable[] a, Strategy strategy) {
     Comparable[] t = a;
     switch (strategy) {
@@ -218,7 +202,7 @@ public class Sort {
   private static void testSortPerformance(int testDataLen, int testRounds, Strategy... strategies) {
     List<Comparable[]> testData = generateRandomArray(testDataLen, testRounds);
 
-    Function<Comparable[], Boolean> validator = Sort::isSorted;
+    Function<Comparable[], Boolean> validator = Util::isSorted;
     Function<Comparable[], String> stringConvertor = (x)->{
       return Arrays.asList(x).stream().map(y->y.toString()).reduce("", (prev, item)->prev + "," + item);
     };

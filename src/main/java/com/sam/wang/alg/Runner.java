@@ -5,9 +5,6 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-/**
- * Created by samwang on 21/05/2017.
- */
 public class Runner {
   private String name;
   private boolean isVerbose;

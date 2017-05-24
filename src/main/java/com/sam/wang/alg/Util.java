@@ -19,6 +19,22 @@ public class Util {
     a[i2] = tmp;
   }
 
+  public static boolean isSorted(Comparable[] a) {
+    for (int i = 0; i < a.length - 1; i++) {
+      if (!isLess(a[i], a[i+1])) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  public static void print(Comparable[] a) {
+    for (int i = 0; i < a.length; i++) {
+      System.out.print(a[i]);
+      System.out.print(',');
+    }
+  }
+
   public static Iterator<Comparable[]> arrayGenerator(int len) {
     return new Iterator<Comparable[]>() {
       @Override
