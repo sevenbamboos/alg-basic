@@ -25,27 +25,21 @@ public class PriorityQueue {
   }
 
   public void add(Comparable item) {
-    int emptySlot = makeARoom();
-    items[emptySlot] = item;
-    swim(emptySlot);
+    if (lastIndex == items.length-1) {
+      throw new RuntimeException("Not support to enlarge queue capacity yet");
+    }
+
+    items[++lastIndex] = item;
+    swim(lastIndex);
   }
 
   private void swim(int i) {
-    int parentIndex = parentIndex(i);
+    int parentIndex = parent(i);
     if (parentIndex == 0) return;
-    Comparable parentItem = getItemAt(parentIndex).get();
-    if (isBetter(getItemAt(i).get(), parentItem)) {
+    if (isBetter(items[i], items[parentIndex])) {
       exchange(items, i, parentIndex);
       swim(parentIndex);
     }
-  }
-
-  // TODO enlarge items' capacity
-  private int makeARoom() {
-    int emptySlot = 1;
-    while (items[emptySlot] != null) emptySlot++;
-    if (emptySlot > lastIndex) lastIndex = emptySlot;
-    return emptySlot;
   }
 
   public Optional<Comparable> top() {
@@ -62,79 +56,45 @@ public class PriorityQueue {
     }
 
     exchange(items, 1, lastIndex);
-    clearItemAt(lastIndex);
+    items[lastIndex--] = null;
+    // TODO shrink items' capacity
+
     sink(1);
     return top;
   }
 
   private void sink(int i) {
-    int left = leftChildIndex(i), right = rightChildIndex(i);
-    Optional<Comparable> item = getItemAt(i), leftItem = getItemAt(left), rightItem = getItemAt(right);
+    int left = left(i), right = right(i);
 
-    int exch = 0;
-    if (!leftItem.isPresent() && !rightItem.isPresent()) {
+    if (left > lastIndex) {
       return;
-    } else if (leftItem.isPresent() && !rightItem.isPresent()) {
-      if (isBetter(leftItem.get(), item.get())) {
-        exch = left;
-      }
-    } else if (!leftItem.isPresent() && rightItem.isPresent()) {
-      if (isBetter(rightItem.get(), item.get())) {
-        exch = right;
-      }
-    } else {
-
-      int betterIndex = left;
-      Comparable better = leftItem.get();
-      if (isBetter(rightItem.get(), leftItem.get())) {
-        betterIndex = right;
-        better = rightItem.get();
-      }
-
-      if (isBetter(better, item.get())) {
-        exch = betterIndex;
-      }
     }
 
-    if (exch > 0) {
+    int exch = left;
+    if (left < lastIndex && isBetter(items[left+1], items[left])) {
+      exch = left + 1;
+    }
+
+    if (isBetter(items[exch], items[i])) {
       exchange(items, i, exch);
       sink(exch);
     }
+
   }
 
   private boolean isBetter(Comparable c1, Comparable c2) {
     return comparator.compare(c1, c2) > 0;
   }
 
-  private boolean isWorse(Comparable c1, Comparable c2) {
-    return comparator.compare(c1, c2) < 0;
-  }
-
-  // TODO shrink items' capacity
-  private void clearItemAt(int index) {
-    items[index] = null;
-    int i = index-1;
-    while (i > 0 && items[i] == null) i--;
-    lastIndex = i;
-  }
-
-  private Optional<Comparable> getItemAt(int index) {
-    if (index > lastIndex) {
-      return Optional.empty();
-    }
-
-    return Optional.ofNullable(items[index]);
-  }
-
-  private int leftChildIndex(int index) {
+  private int left(int index) {
     return index * 2;
   }
 
-  private int rightChildIndex(int index) {
-    return leftChildIndex(index) + 1;
+  private int right(int index) {
+    return left(index) + 1;
   }
 
-  private int parentIndex(int index) {
+  private int parent(int index) {
     return index / 2;
   }
 

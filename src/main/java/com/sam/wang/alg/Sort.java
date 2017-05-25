@@ -269,21 +269,21 @@ public class Sort {
 
   public static void main(String[] args) {
 
+    /*
     int i = 5000;
     while (i < 50000) {
       testSortPerformance(i, 10, Strategy.values());
       i += 5000;
     }
+    */
 
-    // from here, data becomes too large for n^2 strategies (except heap sort)
-    /*
+    // from here, data becomes too large for n^2 strategies
     int j = 50000;
-    Strategy[] strategyInNlgN = {Strategy.MERGE, Strategy.QUICK, Strategy.SYSTEM};
+    Strategy[] strategyInNlgN = {Strategy.HEAP, Strategy.MERGE, Strategy.QUICK, Strategy.SYSTEM};
     while (j < 5000000) {
-      testSortPerformance(j, 10, Strategy.MERGE, Strategy.QUICK, Strategy.SYSTEM);
+      testSortPerformance(j, 10, strategyInNlgN);
       j *= 2;
     }
-    */
 
   }
 }
