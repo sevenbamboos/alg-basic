@@ -1,6 +1,9 @@
 package com.sam.wang.alg;
 
-import java.util.Optional;
+import java.util.*;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 /**
  * Binary Search Tree
@@ -105,8 +108,54 @@ public class BST {
     return _get(root, key).isPresent();
   }
 
-  public void delete(Comparable key) {
+  public Optional delete(Comparable key) {
+    Optional<Node> node = _delete(root, key);
+    return node.isPresent() ? Optional.of(node.get().value) : Optional.empty();
+  }
+
+  private Optional<Node> _delete(Optional<Node> node, Comparable key) {
+    if (!node.isPresent()) {
+      return Optional.empty();
+    }
+
+    Node nodeUnwrapped = node.get();
+    Comparable nodeKey = nodeUnwrapped.key;
+    if (isLess(key, nodeKey)) {
+      nodeUnwrapped.left = _delete(nodeUnwrapped.left, key);
+      nodeUnwrapped.size = 1 + _size(nodeUnwrapped.left) + _size(nodeUnwrapped.right);
+      return node;
+
+    } else if (isBigger(key, nodeKey)) {
+      nodeUnwrapped.right = _delete(nodeUnwrapped.right, key);
+      nodeUnwrapped.size = 1 + _size(nodeUnwrapped.right) + _size(nodeUnwrapped.left);
+      return node;
+
+    } else {
+
+      if (!nodeUnwrapped.right.isPresent()) {
+        return nodeUnwrapped.left;
+
+      } else {
+        Node next = _deleteMin(nodeUnwrapped);
+        next.left = nodeUnwrapped.left;
+        next.right = nodeUnwrapped.right;
+        next.size = 1 + _size(next.right) + _size(next.left);
+        return Optional.of(next);
+      }
+
+    }
+  }
+
+  private Node _deleteMin(Node node) {
+    /*
+    if (node.left.isPresent()) {
+      return _deleteMin(node.left.get());
+    }
+    node.left
+    */
+
     // TODO
+    return null;
   }
 
   public int size() {
@@ -146,6 +195,74 @@ public class BST {
 
   public static void main(String[] args) {
     testSimpleCase();
+
+    /*
+    testPerformance(10);
+    testPerformance(100);
+    testPerformance(1000);
+    testPerformance(2000);
+    testPerformance(4000);
+    testPerformance(10000);
+    */
+  }
+
+  private static void testPerformance(int length) {
+
+    Iterator<Comparable[]> ite = Util.arrayGenerator(length);
+    Runner runner = new Runner("BST put&get " + length, false);
+    Function<BST, String> stringConvertor = (x)->{
+      return x.toString();
+    };
+
+    for (int i = 0; i < 10; i++) {
+      Comparable[] keys = ite.next();
+      Function<BST, Boolean> validator = validateWithGet(keys);
+      runner.run(buildBST(keys), validator, stringConvertor);
+    }
+    printRunnerInfo(runner);
+  }
+
+  private static Supplier<BST> buildBST(Comparable[] keys) {
+    return ()->{
+      BST tree = new BST();
+      for (Comparable key : keys) {
+        tree.put(key, key);
+      }
+      return tree;
+    };
+  }
+
+  private static Function<BST, Boolean> validateWithGet(Comparable[] keys) {
+    return (BST tree) -> {
+      Util.shuffle(keys);
+
+      for (int i = 0; i < keys.length; i++) {
+        if (!tree.contains(keys[i])) {
+          System.err.println("BST contains failed for " + keys[i]);
+          return false;
+        }
+
+        Optional value = tree.get(keys[i]);
+        if (!value.get().equals(keys[i])) {
+          System.err.println("BST get failed for " + keys[i]);
+          return false;
+        }
+      }
+
+      return true;
+    };
+  }
+
+  private static void printRunnerInfo(Runner runner) {
+    System.out.println(runner.briefInfo());
+
+    /*
+    for (Runner runner : allRunners) {
+      System.out.print(String.format("%.0f\t", runner.mean()));
+    }
+    System.out.println();
+    */
+
   }
 
   private static void testSimpleCase() {
