@@ -2,13 +2,16 @@ package com.sam.wang.alg;
 
 import java.util.*;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 /**
  * Binary Search Tree
  */
 public class BST {
+
+  private static enum ChildName {
+    LEFT, RIGHT;
+  }
 
   public class Node {
     private Comparable key;
@@ -30,10 +33,37 @@ public class BST {
       return formattedString("", 0);
     }
 
+    @Override
+    protected void finalize() throws Throwable {
+      System.out.println("Finalize:" + key);
+    }
+
+    private void updateSize() {
+      size = 1 + _size(left) + _size(right);
+    }
+
+    private void updateChild(Optional<Node> child, ChildName name) {
+      switch (name) {
+        case LEFT:
+          this.left = child;
+          return;
+        case RIGHT:
+          this.right = child;
+          return;
+        default:
+          throw new IllegalArgumentException("ChildName:" + name);
+      }
+    }
+
     public String formattedString(String prefix, int prefixCount) {
-      String self = toKeyValueString(Optional.of(this));
-      String left = toKeyValueString(this.left);
-      String right = toKeyValueString(this.right);
+      String self = toKeyValueSizeString(Optional.of(this));
+      String left = toKeyValueSizeString(this.left);
+      String right = toKeyValueSizeString(this.right);
+
+      // Don't print leaf node
+      if (left == "" && right == "") {
+        return "";
+      }
 
       String pre = "";
       int count = prefixCount;
@@ -45,8 +75,13 @@ public class BST {
       return String.format("%s %s<-%s->%s\n", pre, left, self, right) + BST.toString(this.left, prefix, prefixCount) + BST.toString(this.right, prefix, prefixCount);
     }
 
-    private String toKeyValueString(Optional<Node> node) {
-      return String.format("[%s:%s]", node.isPresent() ? node.get().key : "", node.isPresent() ? node.get().value : "");
+    private String toKeyValueSizeString(Optional<Node> node) {
+      if (node.isPresent()) {
+        Node nodeUnwrapped = node.get();
+        return String.format("[%s:%s]%s", nodeUnwrapped.key, nodeUnwrapped.value, nodeUnwrapped.size > 1 ? "(" + nodeUnwrapped.size + ")" : "");
+      } else {
+        return "";
+      }
     }
   }
 
@@ -69,11 +104,11 @@ public class BST {
     Comparable nodeKey = nodeUnwrapped.key;
     if (isLess(key, nodeKey)) {
       nodeUnwrapped.left = _put(nodeUnwrapped.left, key, value);
-      nodeUnwrapped.size = 1 + _size(nodeUnwrapped.left) + _size(nodeUnwrapped.right);
+      nodeUnwrapped.updateSize();
 
     } else if (isBigger(key, nodeKey)) {
       nodeUnwrapped.right = _put(nodeUnwrapped.right, key, value);
-      nodeUnwrapped.size = 1 + _size(nodeUnwrapped.right) + _size(nodeUnwrapped.left);
+      nodeUnwrapped.updateSize();
 
     } else {
       nodeUnwrapped.value = value;
@@ -109,53 +144,77 @@ public class BST {
   }
 
   public Optional delete(Comparable key) {
-    Optional<Node> node = _delete(root, key);
-    return node.isPresent() ? Optional.of(node.get().value) : Optional.empty();
+    if (!root.isPresent()) {
+      return Optional.empty();
+    }
+
+    Optional<Node> node = _delete(root, key, Optional.empty(), Optional.empty());
+    if (!node.isPresent()) {
+      return Optional.empty();
+    } else {
+      _size(root);
+      return Optional.of(node.get().value);
+    }
   }
 
-  private Optional<Node> _delete(Optional<Node> node, Comparable key) {
+  private Optional<Node> _delete(Optional<Node> node, Comparable key, Optional<Node> parent, Optional<ChildName> childName) {
     if (!node.isPresent()) {
       return Optional.empty();
     }
 
     Node nodeUnwrapped = node.get();
     Comparable nodeKey = nodeUnwrapped.key;
+
+    // Continue from left
     if (isLess(key, nodeKey)) {
-      nodeUnwrapped.left = _delete(nodeUnwrapped.left, key);
-      nodeUnwrapped.size = 1 + _size(nodeUnwrapped.left) + _size(nodeUnwrapped.right);
-      return node;
+      return _delete(nodeUnwrapped.left, key, node, Optional.of(ChildName.LEFT));
 
+    // Continue from right
     } else if (isBigger(key, nodeKey)) {
-      nodeUnwrapped.right = _delete(nodeUnwrapped.right, key);
-      nodeUnwrapped.size = 1 + _size(nodeUnwrapped.right) + _size(nodeUnwrapped.left);
-      return node;
+      return _delete(nodeUnwrapped.right, key, node, Optional.of(ChildName.RIGHT));
 
+    // Found
     } else {
 
+      Optional<Node> replacement = Optional.empty();
       if (!nodeUnwrapped.right.isPresent()) {
-        return nodeUnwrapped.left;
+        replacement = nodeUnwrapped.left;
 
       } else {
-        Node next = _deleteMin(nodeUnwrapped);
+        Node next = _deleteMin(nodeUnwrapped.right, nodeUnwrapped).get();
         next.left = nodeUnwrapped.left;
         next.right = nodeUnwrapped.right;
-        next.size = 1 + _size(next.right) + _size(next.left);
-        return Optional.of(next);
+        replacement = Optional.of(next);
       }
+
+      if (parent.isPresent()) {
+        Node parentUnwrapped = parent.get();
+        parentUnwrapped.updateChild(replacement, childName.get());
+      } else {
+        root = replacement;
+      }
+
+      return node;
 
     }
   }
 
-  private Node _deleteMin(Node node) {
-    /*
-    if (node.left.isPresent()) {
-      return _deleteMin(node.left.get());
+  private Optional<Node> _deleteMin(Optional<Node> node, Node parent) {
+    if (!node.isPresent()) {
+      return Optional.empty();
     }
-    node.left
-    */
 
-    // TODO
-    return null;
+    Node nodeUnwrapped = node.get();
+
+    // Find the minimum
+    if (!nodeUnwrapped.left.isPresent()) {
+      parent.left = nodeUnwrapped.right.isPresent() ? nodeUnwrapped.right : Optional.empty();
+      return node;
+
+    // Continue from the left
+    } else {
+      return _deleteMin(nodeUnwrapped.left, nodeUnwrapped);
+    }
   }
 
   public int size() {
@@ -287,5 +346,17 @@ public class BST {
       }
     }
 
+    delete(tree, 4);
+    delete(tree, 5);
+    delete(tree, 7);
+    delete(tree, 1);
+
+  }
+
+  private static void delete(BST tree, Comparable key) {
+    System.out.println("Delete key:" + key);
+    tree.delete(key);
+    System.gc();
+    System.out.println(tree);
   }
 }
