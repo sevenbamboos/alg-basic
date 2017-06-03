@@ -1,6 +1,7 @@
 package com.sam.wang.alg;
 
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -78,7 +79,7 @@ public class BST {
     private String toKeyValueSizeString(Optional<Node> node) {
       if (node.isPresent()) {
         Node nodeUnwrapped = node.get();
-        return String.format("[%s:%s]%s", nodeUnwrapped.key, nodeUnwrapped.value, nodeUnwrapped.size > 1 ? "(" + nodeUnwrapped.size + ")" : "");
+        return String.format("[%s:%s]%s", nodeUnwrapped.key, nodeUnwrapped.value == null ? "" : nodeUnwrapped.value, nodeUnwrapped.size > 1 ? "(" + nodeUnwrapped.size + ")" : "");
       } else {
         return "";
       }
@@ -89,6 +90,76 @@ public class BST {
 
   public BST() {
     root = Optional.empty();
+  }
+
+  public static Comparable[] sort(Comparable[] s) {
+    Util.shuffle(s);
+    BST tree = new BST();
+    for (Comparable item : s) {
+      tree.put(item, null);
+    }
+
+    List<Comparable> t = new ArrayList<>();
+    tree.visit((x) -> t.add(x.key));
+
+    return t.toArray(new Comparable[0]);
+  }
+
+  private class SearchCursor {
+    int index = 0, lo = 0, hi = 0;
+    List<Node> buff;
+
+    SearchCursor(int lo, int hi) {
+      this.lo = lo;
+      this.hi = hi;
+      buff = new ArrayList<>(hi-lo);
+    }
+
+    boolean withIn() {
+      return index >= lo && index <= hi;
+    }
+
+    void append(Node node) {
+      buff.add(node);
+    }
+
+    void move() {
+      index++;
+    }
+  }
+
+  public Iterable<Node> select(int loIndex, int hiIndex) {
+
+    if (loIndex >= hiIndex) {
+      return Collections.emptyList();
+    }
+
+    int lo = Math.max(loIndex, 0);
+    int hi = Math.min(hiIndex, root.get().size-1);
+
+    SearchCursor cursor = new SearchCursor(lo, hi);
+    visit((node) -> {
+      if (!cursor.withIn()) {
+        return;
+      }
+      cursor.append(node);
+      cursor.move();
+    });
+
+    return cursor.buff;
+  }
+
+  public void visit(Consumer<Node> visitor) {
+    _visitInOrder(root, visitor);
+  }
+
+  private void _visitInOrder(Optional<Node> node, Consumer<Node> visitor) {
+    if (!node.isPresent()) return;
+
+    Node nodeUnwrapped = node.get();
+    _visitInOrder(nodeUnwrapped.left, visitor);
+    visitor.accept(nodeUnwrapped);
+    _visitInOrder(nodeUnwrapped.right, visitor);
   }
 
   public void put(Comparable key, Object value) {
@@ -328,12 +399,14 @@ public class BST {
     BST tree = new BST();
     Comparable[] keys = new Integer[] {4, 2, 7, 1, 3, 9, 6, 8, 5};
     Object[] values = new Integer[] {4, 2, 7, 1, 3, 9, 6, 8, 5};
+
+    // put
     for (int i = 0; i < keys.length; i++) {
       tree.put(keys[i], values[i]);
     }
-
     System.out.println(tree);
 
+    // contains & get
     Util.shuffle(keys);
     for (int i = 0; i < keys.length; i++) {
       if (!tree.contains(keys[i])) {
@@ -346,11 +419,42 @@ public class BST {
       }
     }
 
+    // delete
     delete(tree, 4);
     delete(tree, 5);
     delete(tree, 7);
     delete(tree, 1);
 
+    // sort
+    Comparable[] sorted = BST.sort(keys);
+    System.out.println("Sorted:");
+    for (Comparable comparable : sorted) {
+      System.out.print(comparable + ",");
+    }
+    System.out.println();
+
+    // select
+    tree = new BST();
+    keys = Util.randomArray(40);
+    for (int i = 0; i < keys.length; i++) {
+      tree.put(keys[i], null);
+    }
+    System.out.println("Select:");
+    int length = 0;
+    for (Node node : tree.select(0, tree.size()-1)) {
+      System.out.print(node.key + ",");
+      length++;
+    }
+    System.out.println();
+    if (length != tree.size()) {
+      System.out.println("Input:");
+      for (Comparable key : keys) {
+        System.out.print(key + ",");
+      }
+      System.out.println("");
+      System.out.println(tree);
+      throw new RuntimeException("BST select failed");
+    }
   }
 
   private static void delete(BST tree, Comparable key) {

@@ -13,7 +13,7 @@ import java.util.stream.Collectors;
 public class Sort {
 
   public enum Strategy {
-    SELECT, INSERT, SHELL, HEAP, MERGE, QUICK, SYSTEM;
+    SELECT, INSERT, SHELL, BST, HEAP, MERGE, QUICK, SYSTEM;
   }
 
   public static Comparable[] sort(Comparable[] a, Strategy strategy) {
@@ -25,6 +25,10 @@ public class Sort {
         return insertSort(clone(t));
       case SHELL:
         return shellSort(clone(t));
+      case BST:
+        // TODO slow performance
+        //return bstSort(clone(t));
+        return t;
       case HEAP:
         return heapSort(clone(t));
       case MERGE:
@@ -36,6 +40,10 @@ public class Sort {
       default:
         throw new IllegalArgumentException("Unknown strategy:" + strategy);
     }
+  }
+
+  private static Comparable[] bstSort(Comparable[] t) {
+    return BST.sort(t);
   }
 
   private static Comparable[] heapSort(Comparable[] t) {
@@ -269,21 +277,21 @@ public class Sort {
 
   public static void main(String[] args) {
 
-    /*
     int i = 5000;
     while (i < 50000) {
       testSortPerformance(i, 10, Strategy.values());
       i += 5000;
     }
-    */
 
     // from here, data becomes too large for n^2 strategies
+    /*
     int j = 50000;
     Strategy[] strategyInNlgN = {Strategy.HEAP, Strategy.MERGE, Strategy.QUICK, Strategy.SYSTEM};
     while (j < 5000000) {
       testSortPerformance(j, 10, strategyInNlgN);
       j *= 2;
     }
+    */
 
   }
 }
