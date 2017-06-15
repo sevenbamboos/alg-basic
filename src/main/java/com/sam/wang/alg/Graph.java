@@ -1,5 +1,6 @@
 package com.sam.wang.alg;
 
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -51,6 +52,26 @@ public class Graph {
     // how many vertexes are connected to s
     public int count() {
       return count;
+    }
+  }
+
+  public class Path {
+
+    // find paths from source s
+    public Path(int s) {
+
+    }
+
+    // is there a path from s to v
+    public boolean hasPathTo(int v) {
+      // TODO
+      return false;
+    }
+
+    // path from s to v
+    public Iterable<Integer> pathTo(int v) {
+      // TODO
+      return Collections.emptyList();
     }
   }
 
