@@ -56,22 +56,65 @@ public class Graph {
   }
 
   public class Path {
+    private int s;
+    private boolean[] marks;
+    private Integer[] links;
 
     // find paths from source s
     public Path(int s) {
+      this.s = s;
+      marks = new boolean[vertexes.length];
+      links = new Integer[vertexes.length];
+      dfs(s);
 
+      /*
+      System.out.println("links:");
+      for (int i = 0; i < links.length; i++) {
+        System.out.println(i + ":" + links[i]);
+      }
+      */
+    }
+
+    private void dfs(int v) {
+      if (marks[v]) return;
+      marks[v] = true;
+      for (Object obj : vertexes[v]) {
+        int vertex = (Integer) obj;
+        if (!marks[vertex]) {
+
+          // Keep each valid path so that links array can be converted into a tree
+          // Due to dfs, it's NOT the shortest path, instead the result tree
+          // depends on the input order of edges
+          links[vertex] = v;
+
+          dfs(vertex);
+        }
+      }
     }
 
     // is there a path from s to v
     public boolean hasPathTo(int v) {
-      // TODO
-      return false;
+      return marks[v];
     }
 
     // path from s to v
     public Iterable<Integer> pathTo(int v) {
-      // TODO
-      return Collections.emptyList();
+      if (!hasPathTo(v)) {
+        return Collections.emptyList();
+      }
+
+      LinkedList<Integer> linkStack = new LinkedList<>();
+      Integer link = v;
+      linkStack.addFirst(link);
+
+      while ((link = links[link]) != null) {
+        linkStack.addFirst(link);
+        if (link == s) {
+          break;
+        }
+      }
+
+      return linkStack;
     }
   }
 
@@ -103,5 +146,12 @@ public class Graph {
     Search s = graph.new Search(6);
     System.out.println(s.marked(5));
     System.out.println(s.count());
+
+    Path p = graph.new Path(0);
+    System.out.println(p.hasPathTo(5));
+    for (int vertex : p.pathTo(5)) {
+      System.out.print(vertex + "->");
+    }
+    System.out.println();
   }
 }
