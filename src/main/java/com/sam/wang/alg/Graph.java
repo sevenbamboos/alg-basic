@@ -3,6 +3,7 @@ package com.sam.wang.alg;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Queue;
 
 public class Graph {
   private List[] vertexes;
@@ -58,14 +59,21 @@ public class Graph {
   public class Path {
     private int s;
     private boolean[] marks;
+
+    // Keep each valid path so that links array can be converted into a tree
     private Integer[] links;
 
     // find paths from source s
-    public Path(int s) {
+    public Path(int s, boolean needShortest) {
       this.s = s;
       marks = new boolean[vertexes.length];
       links = new Integer[vertexes.length];
-      dfs(s);
+
+      if (needShortest) {
+        bfs(s);
+      } else {
+        dfs(s);
+      }
 
       /*
       System.out.println("links:");
@@ -75,18 +83,33 @@ public class Graph {
       */
     }
 
+    private void bfs(int v) {
+      LinkedList<Integer> queue = new LinkedList<>();
+      queue.add(v);
+      while (!queue.isEmpty()) {
+        int vertex = queue.removeFirst();
+        marks[vertex] = true;
+        for (Object obj : vertexes[vertex]) {
+          int vertexTo = (Integer) obj;
+          if (!marks[vertexTo]) {
+            queue.add(vertexTo);
+            // Set the mark to prevent it from visiting in the next loop (since it is not a recurrence call)
+            marks[vertexTo] = true;
+            links[vertexTo] = vertex;
+          }
+        }
+      }
+    }
+
     private void dfs(int v) {
       if (marks[v]) return;
       marks[v] = true;
       for (Object obj : vertexes[v]) {
         int vertex = (Integer) obj;
         if (!marks[vertex]) {
-
-          // Keep each valid path so that links array can be converted into a tree
           // Due to dfs, it's NOT the shortest path, instead the result tree
           // depends on the input order of edges
           links[vertex] = v;
-
           dfs(vertex);
         }
       }
@@ -147,9 +170,9 @@ public class Graph {
     System.out.println(s.marked(5));
     System.out.println(s.count());
 
-    Path p = graph.new Path(0);
-    System.out.println(p.hasPathTo(5));
-    for (int vertex : p.pathTo(5)) {
+    Path p = graph.new Path(0, true);
+    System.out.println(p.hasPathTo(4));
+    for (int vertex : p.pathTo(4)) {
       System.out.print(vertex + "->");
     }
     System.out.println();
