@@ -141,6 +141,49 @@ public class Graph {
     }
   }
 
+  public class ConnectedComponent {
+    private boolean[] marks;
+    private int count;
+    private int[] ids;
+    public ConnectedComponent() {
+      marks = new boolean[vertexes.length];
+      ids = new int[vertexes.length];
+      count = 0;
+      for (int i = 0; i < vertexes.length; i++) {
+        if (!marks[i]) {
+          dfs(i);
+          count++;
+        }
+      }
+    }
+
+    private void dfs(int v) {
+      if (marks[v]) return;
+      marks[v] = true;
+      ids[v] = count;
+      for (Object obj : vertexes[v]) {
+        int vertex = (Integer) obj;
+        if (!marks[vertex]) {
+          dfs(vertex);
+        }
+      }
+    }
+
+    public boolean connected(int v, int w) {
+      return ids[v] == ids[w];
+    }
+
+    // number of groups of connected components
+    public int count() {
+      return count;
+    }
+
+    // group identifier
+    public int id(int v) {
+      return ids[v];
+    }
+  }
+
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
@@ -176,5 +219,11 @@ public class Graph {
       System.out.print(vertex + "->");
     }
     System.out.println();
+
+    ConnectedComponent cc = graph.new ConnectedComponent();
+    System.out.println(cc.count());
+    System.out.println(cc.connected(1, 5));
+    System.out.println(cc.connected(1, 6));
+    System.out.println(cc.connected(7, 6));
   }
 }
