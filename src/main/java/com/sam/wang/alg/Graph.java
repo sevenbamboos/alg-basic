@@ -184,6 +184,37 @@ public class Graph {
     }
   }
 
+  public class Cycle {
+    private boolean[] marks;
+    private boolean hasCycle;
+    public Cycle() {
+      marks = new boolean[vertexes.length];
+      for (int i = 0; i < vertexes.length; i++) {
+        if (!marks[i]) {
+          dfs(i, i);
+        }
+      }
+    }
+
+    private void dfs(int v, int prev) {
+      if (marks[v]) return;
+      marks[v] = true;
+      for (Object obj : vertexes[v]) {
+        int vertex = (Integer) obj;
+        if (!marks[vertex]) {
+          dfs(vertex, v);
+        } else if (vertex != v) {
+          hasCycle = true;
+          return;
+        }
+      }
+    }
+
+    public boolean hasCycle() {
+      return hasCycle;
+    }
+  }
+
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
@@ -225,5 +256,8 @@ public class Graph {
     System.out.println(cc.connected(1, 5));
     System.out.println(cc.connected(1, 6));
     System.out.println(cc.connected(7, 6));
+
+    Cycle cycle = graph.new Cycle();
+    System.out.println("Has cycle:" + cycle.hasCycle());
   }
 }
