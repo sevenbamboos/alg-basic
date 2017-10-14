@@ -7,6 +7,14 @@ import java.util.stream.Collectors;
 
 public class Util {
 
+  public static <T> boolean isInstanceOf(Class<T> klass, Object target) {
+    return klass.isAssignableFrom(target.getClass());
+  }
+
+  public static void main(String[] args) {
+    System.out.println(isInstanceOf(Number.class, 1));
+  }
+
   public static boolean isLess(Comparable i1, Comparable i2) {
     return i1.compareTo(i2) < 0;
   }
