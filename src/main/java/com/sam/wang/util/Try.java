@@ -23,7 +23,7 @@ public interface Try<R> {
         U execute() throws Throwable;
     }
 
-    public static <T> Try<T> of(Block<T> s) {
+    public static <T> Try<T> tryWith(Block<T> s) {
         try {
             return new Success(s.execute());
 
@@ -51,8 +51,8 @@ public interface Try<R> {
 
         DateFormat dateFormat = new SimpleDateFormat("yyyyMMdd");
 
-        Try<Integer> parseInt = Try.of(() -> {if (true) throw new InterruptedException("abc"); return Integer.parseInt("123");});
-        Try<Date> parseDate = Try.of(() -> dateFormat.parse("20010210"));
+        Try<Integer> parseInt = tryWith(() -> {if (true) throw new InterruptedException("abc"); return Integer.parseInt("123");});
+        Try<Date> parseDate = tryWith(() -> dateFormat.parse("20010210"));
 
         Try<String> result = parseInt.flatMap(i ->
             parseDate.map(d -> i + "," + d));
@@ -73,12 +73,12 @@ class Success<R> implements Try<R> {
     Success(R result) { this.result = result; }
 
     @Override public <T> Try<T> map(Function<R, T> f) {
-        return Try.of(() -> f.apply(result));
+        return Try.tryWith(() -> f.apply(result));
     }
 
     @Override
     public <T> Try<T> flatMap(Function<R, Try<T>> f) {
-        Try<Try<T>> mapped = Try.of(() -> f.apply(result));
+        Try<Try<T>> mapped = Try.tryWith(() -> f.apply(result));
         if (mapped.isSuccessful()) {
             return mapped.get();
         } else {
@@ -88,14 +88,14 @@ class Success<R> implements Try<R> {
 
     @Override
     public void forEach(Consumer<R> callback) {
-        Try.of(() -> { callback.accept(result); return null; });
+        Try.tryWith(() -> { callback.accept(result); return null; });
     }
 
     @Override public R get() { return result; }
 
     @Override
     public Try<R> ifSuccess(Consumer<R> callback) {
-        return Try.of(() -> { callback.accept(result); return result; });
+        return Try.tryWith(() -> { callback.accept(result); return result; });
     }
 
     @Override public boolean isSuccessful() { return true; }
