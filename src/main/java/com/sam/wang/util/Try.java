@@ -1,29 +1,54 @@
 package com.sam.wang.util;
 
+import static com.sam.wang.util.Try.tryWith;
+import static com.sam.wang.util.Try.for1;
+import static com.sam.wang.util.Try.for2;
+import static com.sam.wang.util.Try.for3;
+
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.Optional;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 public interface Try<R> {
 
     <T> Try<T> map(Function<R,T> f);
     <T> Try<T> flatMap(Function<R, Try<T>> f);
+    Try<R> filter(Predicate<R> f);
+    Optional<R> toOption();
+
+    // resolve with no carry about error
     void forEach(Consumer<R> callback);
-    R get();
+
+    // resolve with a success callback and an error handling
+    void andThen(Consumer<R> callback, Consumer<Throwable> errorHandling);
+
+    // resolve separately by two steps
     Try<R> ifSuccess(Consumer<R> callback);
-    boolean isSuccessful();
     void orElse(Consumer<Throwable> errorHandling);
+
+    // section start: better to use other ways to resolve
+    R get();
+    boolean isSuccessful();
     Throwable exception();
+    // section end
 
     @FunctionalInterface
     interface Block<U> {
         U execute() throws Throwable;
     }
 
-    public static <T> Try<T> tryWith(Block<T> s) {
+    @FunctionalInterface
+    interface TriFunction<T1,T2,T3,R> {
+        R apply(T1 t1, T2 t2, T3 t3);
+    }
+
+    static <T> Try<T> tryWith(Block<T> s) {
         try {
             return new Success(s.execute());
 
@@ -35,6 +60,24 @@ public interface Try<R> {
         }
     }
 
+    static <T1> TryBuilder1<T1> for1(Block<T1> b1) {
+        Try<T1> try1 = tryWith(b1);
+        return new TryBuilder1<>(try1);
+    }
+
+    static <T1,T2> TryBuilder2<T1,T2> for2(Block<T1> b1, Block<T2> b2) {
+        Try<T1> try1 = tryWith(b1);
+        Try<T2> try2 = tryWith(b2);
+        return new TryBuilder2<>(try1, try2);
+    }
+
+    static <T1,T2,T3> TryBuilder3<T1,T2,T3> for3(Block<T1> b1, Block<T2> b2, Block<T3> b3) {
+        Try<T1> try1 = tryWith(b1);
+        Try<T2> try2 = tryWith(b2);
+        Try<T3> try3 = tryWith(b3);
+        return new TryBuilder3<>(try1, try2, try3);
+    }
+
     static boolean isFatal(Throwable e) {
 
         Class[] fatalExceptions = new Class[] {
@@ -44,29 +87,74 @@ public interface Try<R> {
             LinkageError.class,
         };
 
-        return Arrays.stream(fatalExceptions).anyMatch(klass -> e.getClass() == klass);
+        return Arrays.stream(fatalExceptions).anyMatch(c -> e.getClass() == c);
     }
 
     public static void main(String[] args) {
 
         DateFormat dateFormat = new SimpleDateFormat("yyyyMMdd");
 
-        Try<Integer> parseInt = tryWith(() -> {if (true) throw new InterruptedException("abc"); return Integer.parseInt("123");});
-        Try<Date> parseDate = tryWith(() -> dateFormat.parse("20010210"));
+        /*
+        Block<Integer> fatalBlock = () -> {
+            if (true) throw new InterruptedException("abc");
+            return Integer.parseInt("123");
+        };
+        */
+
+        Block<Integer> logic1 = () -> Integer.parseInt("12");
+        Block<Date> logic2 = () -> dateFormat.parse("20010310");
+        Block<String> logic3 = () -> "Result:dummy".split(":")[0];
+
+        BiFunction<Integer,Date,String> collectLogic = (i, d) -> i + "," + d;
+        TriFunction<Integer,Date,String,String> collectLogic3 = (i, d, s) -> s + ":" + collectLogic.apply(i, d);
+
+        Try<Integer> parseInt = tryWith(logic1);
+        Try<Date> parseDate = tryWith(logic2);
 
         Try<String> result = parseInt.flatMap(i ->
-            parseDate.map(d -> i + "," + d));
+            parseDate.map(d -> collectLogic.apply(i, d)));
 
         // 1
         result.forEach(r -> System.out.println("1.Result:" + r));
 
         // 2
         result.ifSuccess(r -> System.out.println("2.Result:" + r))
-            .orElse(e -> System.err.println("Exception:" + e.getMessage()));
+            .orElse(e -> System.err.println("2.Exception:" + e));
+
+        // 3
+        result.andThen(
+            r -> System.out.println("3.Result:" + r),
+            e -> System.err.println("3.Exception:" + e)
+        );
+
+        // miscellaneous
+        parseDate.toOption().ifPresent(d -> System.out.println("toOption, date=" + d));
+        parseInt.filter(i -> i > 100).andThen(
+            i -> System.out.println("filter big number=" + i),
+            e -> System.err.println("filter not so big number, " + e)
+        );
+
+        // for1
+        for1(logic2).yield(d -> "123," + d).andThen(
+            r -> System.out.println("4.Result:" + r),
+            e -> System.err.println("4.Exception:" + e)
+        );
+
+        // for2
+        for2(logic1, logic2).yield(collectLogic).andThen(
+            r -> System.out.println("5.Result:" + r),
+            e -> System.err.println("5.Exception:" + e)
+        );
+
+        // for3
+        for3(logic1, logic2, logic3).yield(collectLogic3).andThen(
+            r -> System.out.println("6." + r),
+            e -> System.err.println("6.Exception:" + e)
+        );
     }
 }
 
-class Success<R> implements Try<R> {
+final class Success<R> implements Try<R> {
 
     private R result;
 
@@ -76,8 +164,7 @@ class Success<R> implements Try<R> {
         return Try.tryWith(() -> f.apply(result));
     }
 
-    @Override
-    public <T> Try<T> flatMap(Function<R, Try<T>> f) {
+    @Override public <T> Try<T> flatMap(Function<R, Try<T>> f) {
         Try<Try<T>> mapped = Try.tryWith(() -> f.apply(result));
         if (mapped.isSuccessful()) {
             return mapped.get();
@@ -87,14 +174,17 @@ class Success<R> implements Try<R> {
     }
 
     @Override
-    public void forEach(Consumer<R> callback) {
+    public Try<R> filter(Predicate<R> f) {
+        return f.test(result) ? this : new Failure(new RuntimeException("filter failed"));
+    }
+
+    @Override public void forEach(Consumer<R> callback) {
         Try.tryWith(() -> { callback.accept(result); return null; });
     }
 
     @Override public R get() { return result; }
 
-    @Override
-    public Try<R> ifSuccess(Consumer<R> callback) {
+    @Override public Try<R> ifSuccess(Consumer<R> callback) {
         return Try.tryWith(() -> { callback.accept(result); return result; });
     }
 
@@ -105,9 +195,15 @@ class Success<R> implements Try<R> {
     @Override public Throwable exception() {
         throw new RuntimeException("Success doesn't have exception");
     }
+
+    @Override public void andThen(Consumer<R> callback, Consumer<Throwable> errorHandling) {
+        ifSuccess(callback);
+    }
+
+    @Override public Optional<R> toOption() { return Optional.ofNullable(result); }
 }
 
-class Failure implements Try {
+final class Failure implements Try {
 
     private Throwable exception;
 
@@ -116,6 +212,8 @@ class Failure implements Try {
     @Override public Try map(Function f) { return this; }
 
     @Override public Try flatMap(Function f) { return this; }
+
+    @Override public Try filter(Predicate f) { return this; }
 
     @Override public void forEach(Consumer callback) { return; }
 
@@ -132,4 +230,59 @@ class Failure implements Try {
     }
 
     @Override public Throwable exception() { return exception; }
+
+    @Override public void andThen(Consumer callback, Consumer errorHandling) {
+        orElse(errorHandling);
+    }
+
+    @Override public Optional toOption() { return Optional.empty(); }
 }
+
+// mimic for-comprehension in Scala
+final class TryBuilder1<R1> {
+
+    private final Try<R1> t1;
+
+    TryBuilder1(Try<R1> t1) {
+        this.t1 = t1;
+    }
+
+    public <T> Try<T> yield(Function<R1, T> f) {
+        return t1.map(t1 -> f.apply(t1));
+    }
+}
+
+final class TryBuilder2<R1,R2> {
+
+    private final Try<R1> t1;
+    private final Try<R2> t2;
+
+    TryBuilder2(Try<R1> t1, Try<R2> t2) {
+        this.t1 = t1;
+        this.t2 = t2;
+    }
+
+    public <T> Try<T> yield(BiFunction<R1, R2, T> f) {
+        return t1.flatMap(t1 -> t2.map(t2 -> f.apply(t1, t2)));
+    }
+}
+
+final class TryBuilder3<R1,R2,R3> {
+
+    private final Try<R1> t1;
+    private final Try<R2> t2;
+    private final Try<R3> t3;
+
+    TryBuilder3(Try<R1> t1, Try<R2> t2, Try<R3> t3) {
+        this.t1 = t1;
+        this.t2 = t2;
+        this.t3 = t3;
+    }
+
+    public <T> Try<T> yield(Try.TriFunction<R1, R2, R3, T> f) {
+        return t1.flatMap(r1 -> t2.flatMap(r2 -> t3.map(r3 -> f.apply(r1, r2, r3))));
+    }
+}
+
+// more try builder coming soon
+
