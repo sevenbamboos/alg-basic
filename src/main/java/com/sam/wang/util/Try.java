@@ -15,6 +15,8 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import com.sam.wang.util.Try.Block;
+
 public interface Try<R> {
 
     <T> Try<T> map(Function<R,T> f);
@@ -61,21 +63,15 @@ public interface Try<R> {
     }
 
     static <T1> TryBuilder1<T1> for1(Block<T1> b1) {
-        Try<T1> try1 = tryWith(b1);
-        return new TryBuilder1<>(try1);
+        return new TryBuilder1<>(b1);
     }
 
     static <T1,T2> TryBuilder2<T1,T2> for2(Block<T1> b1, Block<T2> b2) {
-        Try<T1> try1 = tryWith(b1);
-        Try<T2> try2 = tryWith(b2);
-        return new TryBuilder2<>(try1, try2);
+        return new TryBuilder2<>(b1, b2);
     }
 
     static <T1,T2,T3> TryBuilder3<T1,T2,T3> for3(Block<T1> b1, Block<T2> b2, Block<T3> b3) {
-        Try<T1> try1 = tryWith(b1);
-        Try<T2> try2 = tryWith(b2);
-        Try<T3> try3 = tryWith(b3);
-        return new TryBuilder3<>(try1, try2, try3);
+        return new TryBuilder3<>(b1, b2, b3);
     }
 
     static boolean isFatal(Throwable e) {
@@ -101,9 +97,18 @@ public interface Try<R> {
         };
         */
 
-        Block<Integer> logic1 = () -> Integer.parseInt("12");
-        Block<Date> logic2 = () -> dateFormat.parse("20010310");
-        Block<String> logic3 = () -> "Result:dummy".split(":")[0];
+        Block<Integer> logic1 = () -> {
+            System.out.println("logic1");
+            return Integer.parseInt("12");
+        };
+        Block<Date> logic2 = () -> {
+            System.out.println("logic2");
+            return dateFormat.parse("20010310");
+        };
+        Block<String> logic3 = () -> {
+            System.out.println("logic3");
+            return "Result:dummy".split(":")[0];
+        };
 
         BiFunction<Integer,Date,String> collectLogic = (i, d) -> i + "," + d;
         TriFunction<Integer,Date,String,String> collectLogic3 = (i, d, s) -> s + ":" + collectLogic.apply(i, d);
@@ -241,46 +246,58 @@ final class Failure implements Try {
 // mimic for-comprehension in Scala
 final class TryBuilder1<R1> {
 
-    private final Try<R1> t1;
+    private final Block<R1> b1;
 
-    TryBuilder1(Try<R1> t1) {
-        this.t1 = t1;
+    TryBuilder1(Block<R1> b1) {
+        this.b1 = b1;
     }
 
     public <T> Try<T> yield(Function<R1, T> f) {
-        return t1.map(t1 -> f.apply(t1));
+        return Try.tryWith(b1).map(t1 -> f.apply(t1));
     }
 }
 
 final class TryBuilder2<R1,R2> {
 
-    private final Try<R1> t1;
-    private final Try<R2> t2;
+    private Block<R1> b1;
+    private Block<R2> b2;
 
-    TryBuilder2(Try<R1> t1, Try<R2> t2) {
-        this.t1 = t1;
-        this.t2 = t2;
+    TryBuilder2(Block<R1> b1, Block<R2> b2) {
+        this.b1 = b1;
+        this.b2 = b2;
     }
 
     public <T> Try<T> yield(BiFunction<R1, R2, T> f) {
-        return t1.flatMap(t1 -> t2.map(t2 -> f.apply(t1, t2)));
+        return
+            Try.tryWith(b1).flatMap(v1 ->
+                Try.tryWith(b2).map(v2 ->
+                    f.apply(v1, v2)
+                )
+            );
     }
 }
 
 final class TryBuilder3<R1,R2,R3> {
 
-    private final Try<R1> t1;
-    private final Try<R2> t2;
-    private final Try<R3> t3;
+    private Block<R1> b1;
+    private Block<R2> b2;
+    private Block<R3> b3;
 
-    TryBuilder3(Try<R1> t1, Try<R2> t2, Try<R3> t3) {
-        this.t1 = t1;
-        this.t2 = t2;
-        this.t3 = t3;
+    TryBuilder3(Block<R1> b1, Block<R2> b2, Block<R3> b3) {
+        this.b1 = b1;
+        this.b2 = b2;
+        this.b3 = b3;
     }
 
     public <T> Try<T> yield(Try.TriFunction<R1, R2, R3, T> f) {
-        return t1.flatMap(r1 -> t2.flatMap(r2 -> t3.map(r3 -> f.apply(r1, r2, r3))));
+        return
+            Try.tryWith(b1).flatMap(v1 ->
+                Try.tryWith(b2).flatMap(v2 ->
+                    Try.tryWith(b3).map(v3 ->
+                        f.apply(v1, v2, v3)
+                    )
+                )
+            );
     }
 }
 
