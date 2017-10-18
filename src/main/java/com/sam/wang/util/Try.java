@@ -1,9 +1,8 @@
 package com.sam.wang.util;
 
 import static com.sam.wang.util.Try.tryWith;
-import static com.sam.wang.util.Try.for1;
-import static com.sam.wang.util.Try.for2;
-import static com.sam.wang.util.Try.for3;
+import static com.sam.wang.util.Try.try2;
+import static com.sam.wang.util.Try.try3;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -46,6 +45,14 @@ public interface Try<R> {
     }
 
     @FunctionalInterface
+    interface Pipe<U,T> {
+        T execute(U u) throws Throwable;
+        static <R1,R2> Pipe<R1,R2> of(R1 r1, Block<R2> b) {
+            return r -> b.execute();
+        }
+    }
+
+    @FunctionalInterface
     interface TriFunction<T1,T2,T3,R> {
         R apply(T1 t1, T2 t2, T3 t3);
     }
@@ -62,15 +69,27 @@ public interface Try<R> {
         }
     }
 
-    static <T1> TryBuilder1<T1> for1(Block<T1> b1) {
-        return new TryBuilder1<>(b1);
+    static <U,T> Try<T> tryWith(U u, Pipe<U,T> s) {
+        try {
+            return new Success(s.execute(u));
+
+        } catch (Throwable e) {
+            if (isFatal(e))
+                throw new RuntimeException(e);
+            else
+                return new Failure(e);
+        }
     }
 
-    static <T1,T2> TryBuilder2<T1,T2> for2(Block<T1> b1, Block<T2> b2) {
+    static <T1,T2> TryBuilder2<T1,T2> try2(Block<T1> b1, Block<T2> b2) {
         return new TryBuilder2<>(b1, b2);
     }
 
-    static <T1,T2,T3> TryBuilder3<T1,T2,T3> for3(Block<T1> b1, Block<T2> b2, Block<T3> b3) {
+    static <T1,T2> TryBuilder2<T1,T2> try2(Block<T1> b1, Pipe<T1,T2> b2) {
+        return new TryBuilder2<>(b1, b2);
+    }
+
+    static <T1,T2,T3> TryBuilder3<T1,T2,T3> try3(Block<T1> b1, Pipe<T1,T2> b2, Pipe<T2,T3> b3) {
         return new TryBuilder3<>(b1, b2, b3);
     }
 
@@ -101,11 +120,11 @@ public interface Try<R> {
             System.out.println("logic1");
             return Integer.parseInt("12");
         };
-        Block<Date> logic2 = () -> {
+        Pipe<Integer,Date> logic2 = (i) -> {
             System.out.println("logic2");
             return dateFormat.parse("20010310");
         };
-        Block<String> logic3 = () -> {
+        Pipe<Date,String> logic3 = (d) -> {
             System.out.println("logic3");
             return "Result:dummy".split(":")[0];
         };
@@ -114,7 +133,7 @@ public interface Try<R> {
         TriFunction<Integer,Date,String,String> collectLogic3 = (i, d, s) -> s + ":" + collectLogic.apply(i, d);
 
         Try<Integer> parseInt = tryWith(logic1);
-        Try<Date> parseDate = tryWith(logic2);
+        Try<Date> parseDate = tryWith(null, logic2);
 
         Try<String> result = parseInt.flatMap(i ->
             parseDate.map(d -> collectLogic.apply(i, d)));
@@ -139,20 +158,36 @@ public interface Try<R> {
             e -> System.err.println("filter not so big number, " + e)
         );
 
-        // for1
-        for1(logic2).yield(d -> "123," + d).andThen(
-            r -> System.out.println("4.Result:" + r),
-            e -> System.err.println("4.Exception:" + e)
-        );
-
         // for2
-        for2(logic1, logic2).yield(collectLogic).andThen(
+        try2(logic1, logic2).yield(collectLogic).andThen(
             r -> System.out.println("5.Result:" + r),
             e -> System.err.println("5.Exception:" + e)
         );
 
+        try2(
+            () -> String.format("%04d%02d%02d", 2001,6,4),
+            () -> Integer.parseInt("123"))
+
+            .yield(
+                (s, d) -> tryWith(() -> dateFormat.parse(s)).get())
+
+            .andThen(
+                date -> System.out.println("try2 B&B Final result:" + date),
+                e -> System.err.println("try2 B&B Exception:" + e));
+
+        try2(
+            () -> String.format("%04da%02d%02d", 2001,6,4),
+            (date) -> dateFormat.parse(date))
+
+            .yield(
+                (s, d) -> dateFormat.format(d))
+
+            .andThen(
+                s -> System.out.println("Final result:" + s),
+                e -> System.err.println("try2 Block and Pipe:Exception:" + e));
+
         // for3
-        for3(logic1, logic2, logic3).yield(collectLogic3).andThen(
+        try3(logic1, logic2, logic3).yield(collectLogic3).andThen(
             r -> System.out.println("6." + r),
             e -> System.err.println("6.Exception:" + e)
         );
@@ -242,64 +277,3 @@ final class Failure implements Try {
 
     @Override public Optional toOption() { return Optional.empty(); }
 }
-
-// mimic for-comprehension in Scala
-final class TryBuilder1<R1> {
-
-    private final Block<R1> b1;
-
-    TryBuilder1(Block<R1> b1) {
-        this.b1 = b1;
-    }
-
-    public <T> Try<T> yield(Function<R1, T> f) {
-        return Try.tryWith(b1).map(t1 -> f.apply(t1));
-    }
-}
-
-final class TryBuilder2<R1,R2> {
-
-    private Block<R1> b1;
-    private Block<R2> b2;
-
-    TryBuilder2(Block<R1> b1, Block<R2> b2) {
-        this.b1 = b1;
-        this.b2 = b2;
-    }
-
-    public <T> Try<T> yield(BiFunction<R1, R2, T> f) {
-        return
-            Try.tryWith(b1).flatMap(v1 ->
-                Try.tryWith(b2).map(v2 ->
-                    f.apply(v1, v2)
-                )
-            );
-    }
-}
-
-final class TryBuilder3<R1,R2,R3> {
-
-    private Block<R1> b1;
-    private Block<R2> b2;
-    private Block<R3> b3;
-
-    TryBuilder3(Block<R1> b1, Block<R2> b2, Block<R3> b3) {
-        this.b1 = b1;
-        this.b2 = b2;
-        this.b3 = b3;
-    }
-
-    public <T> Try<T> yield(Try.TriFunction<R1, R2, R3, T> f) {
-        return
-            Try.tryWith(b1).flatMap(v1 ->
-                Try.tryWith(b2).flatMap(v2 ->
-                    Try.tryWith(b3).map(v3 ->
-                        f.apply(v1, v2, v3)
-                    )
-                )
-            );
-    }
-}
-
-// more try builder coming soon
-
