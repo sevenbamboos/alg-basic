@@ -1,18 +1,13 @@
 package com.sam.wang.util;
 
-import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.Optional;
 
-import static com.sam.wang.util.Try.*;
-import static com.sam.wang.util.DatePart.*;
+import static com.sam.wang.util.DateElement.*;
 import static org.junit.Assert.*;
 
-public class SimpleDateCheckerDatePartTest {
+public class SimpleDateCheckerDateElementTest {
 
     @Test public void test() {
 
@@ -43,6 +38,8 @@ public class SimpleDateCheckerDatePartTest {
         // no year
         check(Optional.empty(), true, DAY, "29", Optional.empty(), Optional.of(2));
         check(Optional.empty(), false, DAY, "30", Optional.empty(), Optional.of(2));
+        check(Optional.empty(), true, DAY, "31", Optional.empty(), Optional.of(1));
+        check(Optional.empty(), false, DAY, "32", Optional.empty(), Optional.of(1));
 
         // no year, no month
         check(Optional.empty(), true, DAY, "31", Optional.empty(), Optional.empty());
@@ -75,6 +72,8 @@ public class SimpleDateCheckerDatePartTest {
         valid(TIMEZONE, "1259");
         invalid("Time zone for hour can't be more than 13", TIMEZONE, "1359");
         invalid("Time zone for minute can't be more than 59", TIMEZONE, "1260");
+        invalid("Time zone can't be of 3 length", TIMEZONE, "123");
+        invalid("Time zone can't be of 5 length", TIMEZONE, "12345");
 
         valid(YEAR_PREFIX, "+");
         valid(YEAR_PREFIX, "-");
@@ -85,15 +84,15 @@ public class SimpleDateCheckerDatePartTest {
         invalid("Only + and - are allowed before time zone", TIMEZONE_PREFIX, "a");
     }
 
-    private void invalid(String msg, DatePart part, String input) {
+    private void invalid(String msg, DateElement part, String input) {
         check(Optional.of(msg), false, part, input, Optional.empty(), Optional.empty());
     }
 
-    private void valid(DatePart part, String input) {
+    private void valid(DateElement part, String input) {
         check(Optional.empty(), true, part, input, Optional.empty(), Optional.empty());
     }
 
-    private void check(Optional<String> msg, boolean expect, DatePart part, String input, Optional<Integer> year, Optional<Integer> month) {
+    private void check(Optional<String> msg, boolean expect, DateElement part, String input, Optional<Integer> year, Optional<Integer> month) {
         if (msg.isPresent()) {
             assertEquals(msg.get(), expect, part.check(input, year, month));
         } else {

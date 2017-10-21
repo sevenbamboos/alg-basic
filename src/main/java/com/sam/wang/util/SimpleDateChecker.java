@@ -2,15 +2,130 @@ package com.sam.wang.util;
 
 import static com.sam.wang.util.Try.*;
 
-import java.text.DateFormat;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
 
 public class SimpleDateChecker {
+
+    final char[] template;
+
+    static class DatePart {
+        final DateElement element;
+        final int startIndex;
+        int length;
+        boolean optional;
+        StringBuilder contents;
+
+        private DatePart(DateElement element, int startIndex) {
+            this.element = element;
+            this.startIndex = startIndex;
+            length = 0;
+            optional = false;
+        }
+
+        private void addLength() { ++length; }
+        private void finishAdd() { contents = new StringBuilder(length); }
+        private void optional() { optional = !optional; }
+        private void addContent(char ch) { contents.append(ch); }
+        private String value() { return contents.toString(); }
+
+        private boolean check(Optional<Integer> year, Optional<Integer> month) {
+            String value = value();
+            if (!optional && value.isEmpty()) return false;
+            return element.check(value, year, month);
+        }
+    }
+
+    final List<DatePart> parts;
+
+    public SimpleDateChecker(String pattern) {
+
+        int patternLength = pattern.length();
+        template = new char[patternLength];
+        parts = new ArrayList<>();
+        DatePart currentPart = null;
+
+        for (int i = 0; i < patternLength; i++) {
+            char ch = pattern.charAt(i);
+
+            // save to template
+            template[i] = ch;
+
+            // save to parts
+            Optional<DateElement> element = DateElement.of(ch);
+            if (element.isPresent()) {
+                DateElement ele = element.get();
+
+                if (currentPart == null) { // first part
+                    parts.add(currentPart = new DatePart(ele, i));
+
+                } else if (currentPart.element != ele) { // a new part comes
+                    currentPart.finishAdd();
+                    parts.add(currentPart = new DatePart(ele, i));
+
+                } else { // the same part
+                    currentPart.addLength();
+                }
+            }
+        }
+    }
+
+    public SimpleDateChecker optional(DateElement element) {
+        Optional<DatePart> part = parts.stream().filter(p -> p.element == element).findFirst();
+
+        if (!part.isPresent())
+            throw new IllegalArgumentException(
+                "Not found date element:" + element + " in template:" + Arrays.toString(template));
+
+        part.get().optional();
+        return this;
+    }
+
+    public boolean check(String s) {
+
+        for (int i = 0; i < s.length(); i++) {
+            char ch = s.charAt(i);
+            char chFromTemp = template[i];
+
+            Optional<DateElement> element = DateElement.of(chFromTemp);
+            if (!element.isPresent()) continue;
+
+            Optional<DatePart> part = currentPart(i);
+            if (!part.isPresent()) return false;
+
+            DateElement ele = element.get();
+            DatePart currentPart = part.get();
+            if (currentPart.element != ele) return false;
+
+            currentPart.addContent(ch);
+        }
+
+        Optional<Integer> year = part(DateElement.YEAR)
+            .map(p -> tryWith(() -> Integer.parseInt(p.value())).toOption())
+            .orElse(Optional.empty());
+
+        Optional<Integer> month = part(DateElement.MONTH)
+            .map(p -> tryWith(() -> Integer.parseInt(p.value())).toOption())
+            .orElse(Optional.empty());
+
+        return parts.stream().allMatch(p -> p.check(year, month));
+    }
+
+    private Optional<DatePart> part(DateElement element) {
+        return parts.stream()
+            .filter(p -> p.element == element)
+            .findFirst();
+    }
+
+    private Optional<DatePart> currentPart(int index) {
+        return parts.stream()
+            .filter(p -> index >= p.startIndex && index < p.startIndex + p.length)
+            .findFirst();
+    }
 }
 
-enum DatePart {
+enum DateElement {
     YEAR_PREFIX('~'),
     YEAR('Y'),
     MONTH('M'),
@@ -23,7 +138,14 @@ enum DatePart {
     TIMEZONE('Z');
 
     final char simbol;
-    private DatePart(char ch) { simbol = ch; }
+    private DateElement(char ch) { simbol = ch; }
+
+    static Optional<DateElement> of(char ch) {
+        for (DateElement ele : values()) {
+            if (ele.simbol == ch) return Optional.of(ele);
+        }
+        return Optional.empty();
+    }
 
     boolean check(String s, Optional<Integer> year, Optional<Integer> month) {
 
@@ -68,7 +190,7 @@ enum DatePart {
                 })
                 .orElse(false);
 
-        } else if (s.length() == 2) {
+        } else if (s.length() <= 2) {
             return parseInt(s).map(i -> i >= 0 && i < 13).orElse(false);
         } else {
             return false;
