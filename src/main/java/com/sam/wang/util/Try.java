@@ -1,15 +1,7 @@
 package com.sam.wang.util;
 
-import static com.sam.wang.util.Try.tryWith;
-import static com.sam.wang.util.Try.try2;
-import static com.sam.wang.util.Try.try3;
-
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.Optional;
-import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -32,6 +24,7 @@ public interface Try<R> {
     // resolve separately by two steps
     Try<R> ifSuccess(Consumer<R> callback);
     void orElse(Consumer<Throwable> errorHandling);
+    R orElse(R defaultValue);
 
     // section start: better to use other ways to resolve
     R get();
@@ -89,6 +82,10 @@ public interface Try<R> {
         return new TryBuilder2<>(b1, b2);
     }
 
+    static <T1,T2,T3> TryBuilder3<T1,T2,T3> try3(Block<T1> b1, Block<T2> b2, Block<T3> b3) {
+        return new TryBuilder3<>(b1, b2, b3);
+    }
+
     static <T1,T2,T3> TryBuilder3<T1,T2,T3> try3(Block<T1> b1, Pipe<T1,T2> b2, Pipe<T2,T3> b3) {
         return new TryBuilder3<>(b1, b2, b3);
     }
@@ -103,94 +100,6 @@ public interface Try<R> {
         };
 
         return Arrays.stream(fatalExceptions).anyMatch(c -> e.getClass() == c);
-    }
-
-    public static void main(String[] args) {
-
-        DateFormat dateFormat = new SimpleDateFormat("yyyyMMdd");
-
-        /*
-        Block<Integer> fatalBlock = () -> {
-            if (true) throw new InterruptedException("abc");
-            return Integer.parseInt("123");
-        };
-        */
-
-        Block<Integer> logic1 = () -> {
-            System.out.println("logic1");
-            return Integer.parseInt("12");
-        };
-        Pipe<Integer,Date> logic2 = (i) -> {
-            System.out.println("logic2");
-            return dateFormat.parse("20010310");
-        };
-        Pipe<Date,String> logic3 = (d) -> {
-            System.out.println("logic3");
-            return "Result:dummy".split(":")[0];
-        };
-
-        BiFunction<Integer,Date,String> collectLogic = (i, d) -> i + "," + d;
-        TriFunction<Integer,Date,String,String> collectLogic3 = (i, d, s) -> s + ":" + collectLogic.apply(i, d);
-
-        Try<Integer> parseInt = tryWith(logic1);
-        Try<Date> parseDate = tryWith(null, logic2);
-
-        Try<String> result = parseInt.flatMap(i ->
-            parseDate.map(d -> collectLogic.apply(i, d)));
-
-        // 1
-        result.forEach(r -> System.out.println("1.Result:" + r));
-
-        // 2
-        result.ifSuccess(r -> System.out.println("2.Result:" + r))
-            .orElse(e -> System.err.println("2.Exception:" + e));
-
-        // 3
-        result.andThen(
-            r -> System.out.println("3.Result:" + r),
-            e -> System.err.println("3.Exception:" + e)
-        );
-
-        // miscellaneous
-        parseDate.toOption().ifPresent(d -> System.out.println("toOption, date=" + d));
-        parseInt.filter(i -> i > 100).andThen(
-            i -> System.out.println("filter big number=" + i),
-            e -> System.err.println("filter not so big number, " + e)
-        );
-
-        // for2
-        try2(logic1, logic2).yield(collectLogic).andThen(
-            r -> System.out.println("5.Result:" + r),
-            e -> System.err.println("5.Exception:" + e)
-        );
-
-        try2(
-            () -> String.format("%04d%02d%02d", 2001,6,4),
-            () -> Integer.parseInt("123"))
-
-            .yield(
-                (s, d) -> tryWith(() -> dateFormat.parse(s)).get())
-
-            .andThen(
-                date -> System.out.println("try2 B&B Final result:" + date),
-                e -> System.err.println("try2 B&B Exception:" + e));
-
-        try2(
-            () -> String.format("%04da%02d%02d", 2001,6,4),
-            (date) -> dateFormat.parse(date))
-
-            .yield(
-                (s, d) -> dateFormat.format(d))
-
-            .andThen(
-                s -> System.out.println("Final result:" + s),
-                e -> System.err.println("try2 Block and Pipe:Exception:" + e));
-
-        // for3
-        try3(logic1, logic2, logic3).yield(collectLogic3).andThen(
-            r -> System.out.println("6." + r),
-            e -> System.err.println("6.Exception:" + e)
-        );
     }
 }
 
@@ -232,6 +141,8 @@ final class Success<R> implements Try<R> {
 
     @Override public void orElse(Consumer<Throwable> errorHandling) { /* do nothing */ }
 
+    @Override public R orElse(R defaultValue) { return result; }
+
     @Override public Throwable exception() {
         throw new RuntimeException("Success doesn't have exception");
     }
@@ -243,7 +154,7 @@ final class Success<R> implements Try<R> {
     @Override public Optional<R> toOption() { return Optional.ofNullable(result); }
 }
 
-final class Failure implements Try {
+final class Failure<R> implements Try<R> {
 
     private Throwable exception;
 
@@ -257,7 +168,7 @@ final class Failure implements Try {
 
     @Override public void forEach(Consumer callback) { return; }
 
-    @Override public Object get() {
+    @Override public R get() {
         throw new RuntimeException("Failure has no result");
     }
 
@@ -268,6 +179,8 @@ final class Failure implements Try {
     @Override public void orElse(Consumer errorHandling) {
         errorHandling.accept(exception);
     }
+
+    @Override public R orElse(R defaultValue) { return defaultValue; }
 
     @Override public Throwable exception() { return exception; }
 

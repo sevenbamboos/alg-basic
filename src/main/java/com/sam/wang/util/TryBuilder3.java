@@ -9,6 +9,10 @@ public final class TryBuilder3<R1,R2,R3> {
     private Pipe<R1,R2> b2;
     private Pipe<R2,R3> b3;
 
+    TryBuilder3(Block<R1> b1, Block<R2> b2, Block<R3> b3) {
+        this(b1, Pipe.of(null, b2), Pipe.of(null, b3));
+    }
+
     TryBuilder3(Block<R1> b1, Pipe<R1,R2> b2, Pipe<R2,R3> b3) {
         this.b1 = b1;
         this.b2 = b2;
