@@ -8,7 +8,8 @@ import java.util.function.Predicate;
 
 public class SimpleDateChecker {
 
-    final char[] template;
+    private final char[] template;
+    private final List<DatePart> parts;
 
     static class DatePart {
         final DateElement element;
@@ -20,24 +21,38 @@ public class SimpleDateChecker {
         private DatePart(DateElement element, int startIndex) {
             this.element = element;
             this.startIndex = startIndex;
-            length = 0;
+            length = 1;
             optional = false;
         }
 
         private void addLength() { ++length; }
         private void finishAdd() { contents = new StringBuilder(length); }
-        private void optional() { optional = !optional; }
-        private void addContent(char ch) { contents.append(ch); }
+        private void optional() { optional = true; }
+
+        private DatePart addContent(char ch) throws DateContentException {
+            if (contents.length() == length)
+                throw new DateContentException("Reach max length:" + length);
+            contents.append(ch);
+            return this;
+        }
+
         private String value() { return contents.toString(); }
+        private void clear() { contents.delete(0, contents.length()); }
 
         private boolean check(Optional<Integer> year, Optional<Integer> month) {
             String value = value();
-            if (!optional && value.isEmpty()) return false;
-            return element.check(value, year, month);
+
+            // check for optional
+            if (value.isEmpty()) return optional;
+
+            // check length
+            else return value.length() == length
+
+                // check date contents
+                && element.check(value, year, month);
+
         }
     }
-
-    final List<DatePart> parts;
 
     public SimpleDateChecker(String pattern) {
 
@@ -69,6 +84,8 @@ public class SimpleDateChecker {
                 }
             }
         }
+
+        if (currentPart != null) currentPart.finishAdd();
     }
 
     public SimpleDateChecker optional(DateElement element) {
@@ -84,30 +101,47 @@ public class SimpleDateChecker {
 
     public boolean check(String s) {
 
+        parts.forEach(DatePart::clear);
+
         for (int i = 0; i < s.length(); i++) {
-            char ch = s.charAt(i);
+
+            // input is longer than template
+            if (i >= template.length) return false;
+
             char chFromTemp = template[i];
+            char ch = s.charAt(i);
 
             Optional<DateElement> element = DateElement.of(chFromTemp);
-            if (!element.isPresent()) continue;
+            if (!element.isPresent()) {
+
+                // separator characters are different
+                if (ch != chFromTemp) return false;
+
+                continue;
+            }
 
             Optional<DatePart> part = currentPart(i);
+            // input and template don't match
             if (!part.isPresent()) return false;
 
             DateElement ele = element.get();
             DatePart currentPart = part.get();
+            // date element not match
             if (currentPart.element != ele) return false;
 
-            currentPart.addContent(ch);
+            // ? not sure for which case
+            if (!tryWith(() -> currentPart.addContent(ch)).isSuccessful()) {
+                return false;
+            }
         }
 
         Optional<Integer> year = part(DateElement.YEAR)
-            .map(p -> tryWith(() -> Integer.parseInt(p.value())).toOption())
-            .orElse(Optional.empty());
+            .flatMap(p -> tryWith(() -> Integer.parseInt(p.value())).toOption());
+            //.orElse(Optional.empty());
 
         Optional<Integer> month = part(DateElement.MONTH)
-            .map(p -> tryWith(() -> Integer.parseInt(p.value())).toOption())
-            .orElse(Optional.empty());
+            .flatMap(p -> tryWith(() -> Integer.parseInt(p.value())).toOption());
+            //.orElse(Optional.empty());
 
         return parts.stream().allMatch(p -> p.check(year, month));
     }
@@ -125,6 +159,10 @@ public class SimpleDateChecker {
     }
 }
 
+class DateContentException extends Exception {
+    DateContentException(String cause) { super(cause); }
+}
+
 enum DateElement {
     YEAR_PREFIX('~'),
     YEAR('Y'),
@@ -138,7 +176,7 @@ enum DateElement {
     TIMEZONE('Z');
 
     final char simbol;
-    private DateElement(char ch) { simbol = ch; }
+    DateElement(char ch) { simbol = ch; }
 
     static Optional<DateElement> of(char ch) {
         for (DateElement ele : values()) {
@@ -155,17 +193,17 @@ enum DateElement {
             case MILLISECOND:
                 return parseInt.isSuccessful();
             case YEAR:
-                return parseInt.map(i -> isValidYear(i)).orElse(false);
+                return parseInt.map(DateElement::isValidYear).orElse(false);
             case MONTH:
-                return parseInt.map(i -> isValidMonth(i)).orElse(false);
+                return parseInt.map(DateElement::isValidMonth).orElse(false);
             case DAY:
                 return parseInt.map(i -> isValidDay(year, month, i)).orElse(false);
             case HOUR:
-                return parseInt.map(i -> isValidHour(i)).orElse(false);
+                return parseInt.map(DateElement::isValidHour).orElse(false);
             case MINUTE:
-                return parseInt.map(i -> isValidMinute(i)).orElse(false);
+                return parseInt.map(DateElement::isValidMinute).orElse(false);
             case SECOND:
-                return parseInt.map(i -> isValidSecond(i)).orElse(false);
+                return parseInt.map(DateElement::isValidSecond).orElse(false);
             case YEAR_PREFIX:
             case TIMEZONE_PREFIX:
                 return "+".equals(s) || "-".equals(s);
@@ -182,7 +220,7 @@ enum DateElement {
             Block<Integer> parseHour = () -> Integer.parseInt(s.substring(0, 2));
             Block<Integer> parseMin = () -> Integer.parseInt(s.substring(2));
 
-            return try2(parseHour, parseMin).yield((i1, i2) -> new Tuple2<Integer, Integer>(i1, i2))
+            return try2(parseHour, parseMin).yield(Tuple2::new)
                 .map(tp2 -> {
                     boolean validHour = tp2._1 >= 0 && tp2._1 < 13;
                     boolean validMin = tp2._2 >= 0 && tp2._2 < 60;
@@ -204,7 +242,7 @@ enum DateElement {
             .orElseGet(() -> d > 0 && d <= 31);
     }
 
-    private static BiFunction<Optional<Integer>,Integer,Integer> daysOfMonth = (year, month) -> {
+    private final static BiFunction<Optional<Integer>,Integer,Integer> daysOfMonth = (year, month) -> {
         final int[] days = new int[] {31,28,31,30,31,30,31,31,30,31,30,31};
 
         Predicate<Integer> isFeb = m -> m == 2;
@@ -220,9 +258,7 @@ enum DateElement {
     };
 
     private static boolean isLeapYear(int y) {
-        if (y % 4 != 0) return false;
-        else if (y % 100 != 0) return true;
-        else return y % 400 == 0;
+        return y % 4 == 0  && (y % 100 != 0 || y % 400 == 0);
     }
 
     private static boolean isValidYear(int x) { return x != 0; }

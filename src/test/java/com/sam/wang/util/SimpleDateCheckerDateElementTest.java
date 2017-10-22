@@ -9,7 +9,16 @@ import static org.junit.Assert.*;
 
 public class SimpleDateCheckerDateElementTest {
 
-    @Test public void test() {
+    @Test public void testOf() {
+        exist(YEAR);
+        exist(HOUR);
+        exist(TIMEZONE);
+
+        notExist('a');
+        notExist('-');
+    }
+
+    @Test public void testCheck() {
 
         valid(YEAR, "2001");
         valid(YEAR, "0001");
@@ -98,5 +107,16 @@ public class SimpleDateCheckerDateElementTest {
         } else {
             assertEquals(expect, part.check(input, year, month));
         }
+    }
+
+    private void exist(DateElement expect) {
+        Optional<DateElement> actual = DateElement.of(expect.simbol);
+        assertTrue(actual.isPresent());
+        assertEquals(expect, actual.get());
+    }
+
+    private void notExist(char ch) {
+        Optional<DateElement> actual = DateElement.of(ch);
+        assertFalse(actual.isPresent());
     }
 }
