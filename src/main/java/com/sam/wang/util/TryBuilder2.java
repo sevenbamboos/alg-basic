@@ -2,19 +2,19 @@ package com.sam.wang.util;
 
 import java.util.function.BiFunction;
 
-import com.sam.wang.util.Try.Block;
+import com.sam.wang.util.Try.Expression;
 import com.sam.wang.util.Try.Pipe;
 
 public final class TryBuilder2<R1,R2> {
 
-    private Block<R1> b1;
-    private Pipe<R1,R2> b2;
+    private final Expression<R1> b1;
+    private final Pipe<R1,R2> b2;
 
-    TryBuilder2(Block<R1> b1, Block<R2> b2) {
+    TryBuilder2(Expression<R1> b1, Expression<R2> b2) {
         this(b1, Pipe.of(null, b2));
     }
 
-    TryBuilder2(Block<R1> b1, Pipe<R1,R2> b2) {
+    TryBuilder2(Expression<R1> b1, Pipe<R1,R2> b2) {
         this.b1 = b1;
         this.b2 = b2;
     }

@@ -4,10 +4,10 @@ import org.junit.Test;
 
 import java.util.Optional;
 
-import static com.sam.wang.util.DateElement.*;
+import static com.sam.wang.util.SimpleDateElement.*;
 import static org.junit.Assert.*;
 
-public class SimpleDateCheckerDateElementTest {
+public class SimpleDateElementTest {
 
     @Test public void testOf() {
         exist(YEAR);
@@ -93,15 +93,15 @@ public class SimpleDateCheckerDateElementTest {
         invalid("Only + and - are allowed before time zone", TIMEZONE_PREFIX, "a");
     }
 
-    private void invalid(String msg, DateElement part, String input) {
+    private void invalid(String msg, SimpleDateElement part, String input) {
         check(Optional.of(msg), false, part, input, Optional.empty(), Optional.empty());
     }
 
-    private void valid(DateElement part, String input) {
+    private void valid(SimpleDateElement part, String input) {
         check(Optional.empty(), true, part, input, Optional.empty(), Optional.empty());
     }
 
-    private void check(Optional<String> msg, boolean expect, DateElement part, String input, Optional<Integer> year, Optional<Integer> month) {
+    private void check(Optional<String> msg, boolean expect, SimpleDateElement part, String input, Optional<Integer> year, Optional<Integer> month) {
         if (msg.isPresent()) {
             assertEquals(msg.get(), expect, part.check(input, year, month));
         } else {
@@ -109,14 +109,14 @@ public class SimpleDateCheckerDateElementTest {
         }
     }
 
-    private void exist(DateElement expect) {
-        Optional<DateElement> actual = DateElement.of(expect.simbol);
+    private void exist(SimpleDateElement expect) {
+        Optional<SimpleDateElement> actual = SimpleDateElement.of(expect.symbol);
         assertTrue(actual.isPresent());
         assertEquals(expect, actual.get());
     }
 
     private void notExist(char ch) {
-        Optional<DateElement> actual = DateElement.of(ch);
+        Optional<SimpleDateElement> actual = SimpleDateElement.of(ch);
         assertFalse(actual.isPresent());
     }
 }
