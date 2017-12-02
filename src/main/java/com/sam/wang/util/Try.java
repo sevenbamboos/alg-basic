@@ -6,7 +6,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import com.sam.wang.util.Try.Block;
+import static com.sam.wang.util.Try.*;
 
 public interface Try<R> {
 
@@ -33,15 +33,21 @@ public interface Try<R> {
     // section end
 
     @FunctionalInterface
-    interface Block<U> {
-        U execute() throws Throwable;
+    interface Block {
+        void execute() throws Throwable;
+    }
+
+    @FunctionalInterface
+    interface Expression<U> {
+        U evaluate() throws Throwable;
+        static Expression<Void> of(Block b) { return () -> { b.execute(); return null;}; }
     }
 
     @FunctionalInterface
     interface Pipe<U,T> {
         T execute(U u) throws Throwable;
-        static <R1,R2> Pipe<R1,R2> of(R1 r1, Block<R2> b) {
-            return r -> b.execute();
+        static <R1,R2> Pipe<R1,R2> of(R1 r1, Expression<R2> b) {
+            return r -> b.evaluate();
         }
     }
 
@@ -50,16 +56,12 @@ public interface Try<R> {
         R apply(T1 t1, T2 t2, T3 t3);
     }
 
-    static <T> Try<T> tryWith(Block<T> s) {
-        try {
-            return new Success(s.execute());
+    static Try<Void> tryWith(Block s) {
+        return tryWith(Expression.of(s));
+    }
 
-        } catch (Throwable e) {
-            if (isFatal(e))
-                throw new RuntimeException(e);
-            else
-                return new Failure(e);
-        }
+    static <T> Try<T> tryWith(Expression<T> s) {
+        return tryWith(null, Pipe.of(null, s));
     }
 
     static <U,T> Try<T> tryWith(U u, Pipe<U,T> s) {
@@ -74,19 +76,17 @@ public interface Try<R> {
         }
     }
 
-    static <T1,T2> TryBuilder2<T1,T2> try2(Block<T1> b1, Block<T2> b2) {
+    static <T> Try<T> doNothing(T t) { return new Success(t); }
+
+    static <T1,T2> TryBuilder2<T1,T2> try2(Expression<T1> b1, Expression<T2> b2) {
         return new TryBuilder2<>(b1, b2);
     }
 
-    static <T1,T2> TryBuilder2<T1,T2> try2(Block<T1> b1, Pipe<T1,T2> b2) {
+    static <T1,T2> TryBuilder2<T1,T2> try2(Expression<T1> b1, Pipe<T1,T2> b2) {
         return new TryBuilder2<>(b1, b2);
     }
 
-    static <T1,T2,T3> TryBuilder3<T1,T2,T3> try3(Block<T1> b1, Block<T2> b2, Block<T3> b3) {
-        return new TryBuilder3<>(b1, b2, b3);
-    }
-
-    static <T1,T2,T3> TryBuilder3<T1,T2,T3> try3(Block<T1> b1, Pipe<T1,T2> b2, Pipe<T2,T3> b3) {
+    static <T1,T2,T3> TryBuilder3<T1,T2,T3> try3(Expression<T1> b1, Pipe<T1,T2> b2, Pipe<T2,T3> b3) {
         return new TryBuilder3<>(b1, b2, b3);
     }
 
@@ -105,7 +105,7 @@ public interface Try<R> {
 
 final class Success<R> implements Try<R> {
 
-    private R result;
+    private final R result;
 
     Success(R result) { this.result = result; }
 
@@ -156,27 +156,27 @@ final class Success<R> implements Try<R> {
 
 final class Failure<R> implements Try<R> {
 
-    private Throwable exception;
+    private final Throwable exception;
 
     Failure(Throwable exception) { this.exception = exception; }
 
-    @Override public Try map(Function f) { return this; }
+    @Override public Try<R> map(Function f) { return this; }
 
-    @Override public Try flatMap(Function f) { return this; }
+    @Override public Try<R> flatMap(Function f) { return this; }
 
-    @Override public Try filter(Predicate f) { return this; }
+    @Override public Try<R> filter(Predicate f) { return this; }
 
-    @Override public void forEach(Consumer callback) { return; }
+    @Override public void forEach(Consumer callback) { }
 
     @Override public R get() {
         throw new RuntimeException("Failure has no result");
     }
 
-    @Override public Try ifSuccess(Consumer callback) { return this; }
+    @Override public Try<R> ifSuccess(Consumer callback) { return this; }
 
     @Override public boolean isSuccessful() { return false; }
 
-    @Override public void orElse(Consumer errorHandling) {
+    @Override public void orElse(Consumer<Throwable> errorHandling) {
         errorHandling.accept(exception);
     }
 
@@ -184,9 +184,9 @@ final class Failure<R> implements Try<R> {
 
     @Override public Throwable exception() { return exception; }
 
-    @Override public void andThen(Consumer callback, Consumer errorHandling) {
+    @Override public void andThen(Consumer<R> callback, Consumer<Throwable> errorHandling) {
         orElse(errorHandling);
     }
 
-    @Override public Optional toOption() { return Optional.empty(); }
+    @Override public Optional<R> toOption() { return Optional.empty(); }
 }

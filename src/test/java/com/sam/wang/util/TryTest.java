@@ -14,11 +14,11 @@ import java.util.Date;
 public class TryTest {
 
     private static DateFormat dateFormat;
-    private static Block<Integer> fatalBlock;
+    private static Expression<Integer> fatalBlock;
 
-    private Block<Integer> parseInt;
-    private Block<Date> parseDate;
-    private Block<String> splitString;
+    private Expression<Integer> parseInt;
+    private Expression<Date> parseDate;
+    private Expression<String> splitString;
 
     private Pipe<Integer,Double> sqrtIt;
 
