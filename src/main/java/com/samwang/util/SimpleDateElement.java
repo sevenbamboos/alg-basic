@@ -66,7 +66,7 @@ public enum SimpleDateElement {
             Expression<Integer> parseHour = () -> Integer.parseInt(s.substring(0, 2));
             Expression<Integer> parseMin = () -> Integer.parseInt(s.substring(2));
 
-            return try2(parseHour, parseMin).yield(Tuple2::new)
+            return try2(parseHour, parseMin).lift(Tuple2::new)
                 .map(tp2 -> {
                     boolean validHour = tp2._1 >= 0 && tp2._1 < 15;
                     boolean lessThan1400 = tp2._1 == 14 && tp2._2 == 0;

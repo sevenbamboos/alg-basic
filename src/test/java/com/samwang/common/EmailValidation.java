@@ -10,17 +10,17 @@ public class EmailValidation {
     static Pattern emailPattern =
         Pattern.compile("^[a-z0-9._%+-]+@[a-z0-9.-]+\\.[a-z]{2,4}$");
 
-    static Effect<String> success = s ->
-        System.out.println("Mail sent to " + s);
+    static Function<String, IO<Nothing>> success = s ->
+        () -> { System.out.println("Mail sent to " + s); return Nothing.instance; };
 
-    static Effect<String> failure = s ->
-        System.err.println("Error message logged: " + s);
+    static Function<String, IO<Nothing>> failure = s ->
+        () -> { System.err.println("Error message logged: " + s); return Nothing.instance; };
 
     public static void main(String... args) {
-        emailChecker.apply("this.is@my.email").bind(success, failure);
-        emailChecker.apply(null).bind(success, failure);
-        emailChecker.apply("").bind(success, failure);
-        emailChecker.apply("john.doe@acme.com").bind(success, failure);
+        emailChecker.apply("this.is@my.email").tryIO(success, failure);
+        emailChecker.apply(null).tryIO(success, failure);
+        emailChecker.apply("").tryIO(success, failure);
+        emailChecker.apply("john.doe@acme.com").tryIO(success, failure);
     }
 
     static Function<String, Result<String>> emailChecker = s -> match(

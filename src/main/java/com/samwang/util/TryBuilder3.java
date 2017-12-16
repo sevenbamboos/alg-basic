@@ -1,6 +1,7 @@
 package com.samwang.util;
 
 import com.samwang.util.Try.Expression;
+import com.samwang.util.Try.TriFunction;
 import com.samwang.util.Try.Pipe;
 
 public final class TryBuilder3<R1,R2,R3> {
@@ -15,7 +16,7 @@ public final class TryBuilder3<R1,R2,R3> {
         this.b3 = b3;
     }
 
-    public <T> Try<T> yield(Try.TriFunction<R1, R2, R3, T> f) {
+    public <T> Try<T> lift(TriFunction<R1, R2, R3, T> f) {
         return
             Try.tryWith(b1).flatMap(v1 ->
                 Try.tryWith(v1, b2).flatMap(v2 ->

@@ -21,7 +21,7 @@ public final class TryBuilder2<R1,R2> {
 
     // TODO What about f can throw exception ?
     // But map has already taken care of try ?
-    public <T> Try<T> yield(BiFunction<R1, R2, T> f) {
+    public <T> Try<T> lift(BiFunction<R1, R2, T> f) {
         return
             Try.tryWith(b1).flatMap(v1 ->
                 Try.tryWith(v1, b2).map(v2 ->
@@ -30,7 +30,7 @@ public final class TryBuilder2<R1,R2> {
             );
     }
 
-    public Try<R2> yield() {
-        return yield((b1, b2) -> b2);
+    public Try<R2> lift() {
+        return lift((b1, b2) -> b2);
     }
 }

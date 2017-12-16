@@ -66,14 +66,14 @@ public class TryTest {
         setup("123", "20070401", "part1:part2");
 
         System.out.println("[case] happy path:");
-        try2(parseInt, parseDate).yield((n, d) -> String.format("Int:%d, Date:%s", n, d)).andThen(
+        try2(parseInt, parseDate).lift((n, d) -> String.format("Int:%d, Date:%s", n, d)).andThen(
             r -> assertNotNull(r),
             e -> assertNull(e)
         );
 
         System.out.println("[case] first logic failed:");
         parseInt("abc");
-        try2(parseInt, parseDate).yield((n, d) -> String.format("Int:%d, Date:%s", n, d)).andThen(
+        try2(parseInt, parseDate).lift((n, d) -> String.format("Int:%d, Date:%s", n, d)).andThen(
             r -> assertNull(r),
             e -> assertNotNull(e)
         );
@@ -81,14 +81,14 @@ public class TryTest {
         System.out.println("[case] second logic failed:");
         parseInt("123");
         parseDate("abcd0401");
-        try2(parseInt, parseDate).yield((n, d) -> String.format("Int:%d, Date:%s", n, d)).andThen(
+        try2(parseInt, parseDate).lift((n, d) -> String.format("Int:%d, Date:%s", n, d)).andThen(
             r -> assertNull(r),
             e -> assertNotNull(e)
         );
 
         try {
             System.out.println("[case] first logic has fatal error:");
-            try2(fatalBlock, parseInt).yield().andThen(
+            try2(fatalBlock, parseInt).lift().andThen(
                 r -> fail(),
                 e -> fail()
             );
@@ -96,7 +96,7 @@ public class TryTest {
         } catch (Throwable thr) {}
 
         System.out.println("[case] block and pipe:");
-        try2(parseInt, sqrtIt).yield((i, ii) -> i + ii).andThen(
+        try2(parseInt, sqrtIt).lift((i, ii) -> i + ii).andThen(
             r -> assertNull(r),
             e -> assertNull(e)
         );
