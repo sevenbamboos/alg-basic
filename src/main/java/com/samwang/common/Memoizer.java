@@ -22,10 +22,16 @@ public class Memoizer<T, U> {
     public static <T, U> Function<T, U> memoize(Function<T, U> function) {
         return new Memoizer<T, U>().doMemoize(function);
     }
-
-    public Function<T, U> doMemoize(Function<T, U> function) {
-        return input -> cache.computeIfAbsent(input, function::apply);
-    }
+	
+	public Function<T, U> doMemoize(Function<T, U> function) {
+	        return input -> {
+	        	++performedCount;
+	        	return cache.computeIfAbsent(input, k -> {
+	        		++executedCount;
+	        		return function.apply(k);
+	        	});
+	        };
+	    }
     
 	public Supplier<U> doMemoize(T key, Supplier<U> supplier) {
 	  	return toSupplier(key, doMemoize(toFunc(supplier)));
