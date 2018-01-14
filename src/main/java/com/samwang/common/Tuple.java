@@ -7,9 +7,13 @@ public class Tuple<T, U> {
     public final T _1;
     public final U _2;
 
-    public Tuple(T t, U u) {
-        this._1 = Objects.requireNonNull(t);
-        this._2 = Objects.requireNonNull(u);
+    Tuple(T t, U u) {
+        this._1 = t;
+        this._2 = u;
+    }
+
+    public static <T1, T2> Tuple<T1, T2> Tuple(T1 t1, T2 t2) {
+        return new Tuple<>(t1, t2);
     }
 
     @Override
