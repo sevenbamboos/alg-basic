@@ -3,15 +3,12 @@ package com.samwang.util;
 import com.samwang.common.Tuple;
 
 import java.util.*;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static com.samwang.common.Tuple.Tuple;
-import static com.samwang.util.Utility.*;
 
 public enum Utility {
 	;
@@ -185,8 +182,25 @@ public enum Utility {
         }
     }
 
-    public static void main(String[] args) {
+    public static String fmtNameBeforeJava8(String emptyPlaceHolder, String delim, String... names) {
+        return join(names, emptyPlaceHolder, delim, 0, new StringBuilder());
+    }
 
+    private static String join(String[] arr, String emptyPlaceHolder, String delim, int index, StringBuilder accumulator) {
+        if (index >= arr.length) return accumulator.toString();
+        if (index > 0) accumulator.append(delim);
+        return join(arr, emptyPlaceHolder, delim, index+1, accumulator.append(notEmptyOrDefault(arr[index], emptyPlaceHolder)));
+    }
+
+    private static String notEmptyOrDefault(String str, String defaultValue) {
+        return str == null || str.trim().isEmpty() ? defaultValue : str;
+    }
+
+    public static void main(String[] args) {
+        System.out.println("|>" + fmtNameBeforeJava8("[Not Provided]", "|"));
+    }
+
+    private static void oldMain() {
         String oldMail = "icanfly@qq.com";
 
         Email aEmail = new Email();
