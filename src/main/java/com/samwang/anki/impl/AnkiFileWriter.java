@@ -5,10 +5,9 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.*;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static java.nio.file.StandardOpenOption.*;
@@ -18,6 +17,7 @@ public class AnkiFileWriter {
     private final File outputFolder;
     private final List<CardGroup> groups;
     private static final boolean outputByType = true;
+    private static final DateFormat dateFormat = new SimpleDateFormat("YYYY-MM-DD-HH-mm-ss");
 
     public AnkiFileWriter(Path root, List<CardGroup> groups) {
         this.outputFolder = new File(root.toFile(), "anki-out");
@@ -25,9 +25,10 @@ public class AnkiFileWriter {
     }
 
     public void doWrite() throws IOException {
-        if (outputFolder.exists()) {
-            Files.walk(outputFolder.toPath()).map(Path::toFile).forEach(File::delete);
-        }
+        // clear output folder
+//        if (outputFolder.exists()) {
+//            Files.walk(outputFolder.toPath()).map(Path::toFile).forEach(File::delete);
+//        }
 
         outputFolder.mkdir();
         Map<CardType, List<Card>> cardsByType = new HashMap<>();
@@ -66,13 +67,17 @@ public class AnkiFileWriter {
     }
 
     private void writeToFileByTypeSync(CardType type, List<Card> cards) throws IOException {
-        File output = new File(outputFolder, type.name() + ".txt");
+        File output = new File(outputFolder, generateFileName(type.name()));
         writeFileSync(output, cards);
     }
 
     private void writeToGroupFile(CardGroup group) throws IOException {
-        File output = new File(outputFolder, group.name + ".txt");
+        File output = new File(outputFolder, generateFileName(group.name));
         writeFileSync(output, group.getCards());
+    }
+
+    private String generateFileName(String name) {
+        return String.format("%s-%s.%s", name, dateFormat.format(new Date()), "txt");
     }
 
     private void writeFileSync(File file, List<Card> cards) throws IOException {
