@@ -82,7 +82,12 @@ public class Question extends AbstractTokenGroup {
         if (answer == null || answer.children.isEmpty()) return;
 
         // TODO what about having more than one key
-        keys.get(0).filled(answer.children);
+//        keys.get(0).filled(answer.children);
+
+        int index = 0;
+        for (KeyToken key : keys) {
+            index = key.filled(answer.children, index);
+        }
     }
 
     public String toClozeValue() {
@@ -94,7 +99,7 @@ public class Question extends AbstractTokenGroup {
     public String toBasicValue(String delim) {
         String keyPart = keys.stream()
             .map(x -> x.filledValue(" "))
-            .collect(Collectors.joining(" "));
+            .collect(Collectors.joining(", "));
         String commentPart = comments.stream()
             .map(x -> x.value(delim))
             .collect(Collectors.joining(" "));

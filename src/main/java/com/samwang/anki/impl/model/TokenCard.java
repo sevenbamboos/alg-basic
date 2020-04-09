@@ -33,7 +33,6 @@ public class TokenCard implements Card {
 
     @Override
     public String value() {
-        // TODO
         return source;
     }
 
@@ -54,6 +53,7 @@ public class TokenCard implements Card {
             card.question.apply(card.answer);
 
         } catch (Exception e) {
+            e.printStackTrace();
             card.parsedException = e;
         }
 
@@ -61,8 +61,8 @@ public class TokenCard implements Card {
     }
 
     public static void main(String[] args) {
-        String question = "token1 *key1 _ key2 _* (com1) token2";
-        String answer = "ans1, ans2";
+        String question = "token1 *key1 _ key2 _* (com1) token2 *keya _*";
+        String answer = "ans1, ans2, ansa";
         String line = question + " | " + answer;
         try {
             TokenCard card = parse(line, question, answer);

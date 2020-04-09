@@ -30,7 +30,12 @@ public class KeyToken extends AbstractTokenGroup {
         return this;
     }
 
-    public KeyToken filled(List<Token> fillings) throws ParsedException {
+    public int filled(List<Token> fillings, int index) throws ParsedException {
+        if (fillings.size() <= index) {
+            throw new ParsedException("toBeFilled is more than fillings:" + (index+1) + ">" + fillings.size());
+        }
+        fillings = fillings.subList(index, fillings.size());
+
         List<Filling> toBeFilleds = children.stream()
             .filter(x -> x instanceof Filling)
             .map(x -> (Filling) x)
@@ -44,11 +49,11 @@ public class KeyToken extends AbstractTokenGroup {
             toBeFilleds.get(i).setFilled(fillings.get(i));
         }
 
-        if (i < fillings.size()) {
-            throw new ParsedException("toBeFilled is less than fillings:" + i + "<" + fillings.size());
-        }
+//        if (i < fillings.size()) {
+//            throw new ParsedException("toBeFilled is less than fillings:" + i + "<" + fillings.size());
+//        }
 
-        return this;
+        return i;
     }
 
     public String clozeValue(String delim) {
