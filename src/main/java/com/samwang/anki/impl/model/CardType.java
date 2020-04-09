@@ -1,4 +1,4 @@
-package com.samwang.anki.impl;
+package com.samwang.anki.impl.model;
 
 public enum CardType {
     QuestionAndAnswer,

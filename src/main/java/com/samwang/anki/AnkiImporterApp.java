@@ -2,7 +2,7 @@ package com.samwang.anki;
 
 import com.samwang.anki.impl.AnkiFileLogger;
 import com.samwang.anki.impl.AnkiFileWriter;
-import com.samwang.anki.impl.CardGroup;
+import com.samwang.anki.impl.model.CardGroup;
 import com.samwang.anki.impl.MarkdownImporter;
 
 import java.io.Closeable;

@@ -1,4 +1,6 @@
-package com.samwang.anki.impl;
+package com.samwang.anki.impl.model;
+
+import com.samwang.anki.impl.AnkiFileLogger;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -21,7 +23,7 @@ public class CardGroup {
     }
 
     public void addCard(Card card) {
-        cards.add(card.addField(getTags()));
+        cards.add(card.setTags(getTags()));
     }
 
     private String getTags() {

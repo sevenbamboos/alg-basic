@@ -1,12 +1,16 @@
 package com.samwang.anki.impl;
 
+import com.samwang.anki.impl.model.Card;
+import com.samwang.anki.impl.model.CardGroup;
+
 import java.io.IOException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 
-import static com.samwang.anki.impl.Card.parseCard;
+import static com.samwang.anki.impl.model.StringListCard.parseCard;
+import static com.samwang.anki.impl.model.TokenCard.parse;
 
 public class MarkdownImporter {
 
@@ -37,9 +41,13 @@ public class MarkdownImporter {
                 groups.add(group);
 
             } else if (group != null){
-                Optional<Card> card = processLine(line);
-                if (card.isPresent()) {
-                    group.addCard(card.get());
+                Card card = processLine(line);
+                if (card != null) {
+                    if (card.hasError()) {
+                        System.out.println("Failed to parse:" + card.source());
+                    } else {
+                        group.addCard(card);
+                    }
                 }
             }
         }
@@ -49,18 +57,19 @@ public class MarkdownImporter {
         return groups;
     }
 
-    private Optional<Card> processLine(String s) {
-        if (s == null || s.trim().isEmpty()) return Optional.empty();
+    private Card processLine(String s) {
+        if (s == null || s.trim().isEmpty()) return null;
 
         String[] tokens = s.split("\\|");
 
-        if (tokens.length < 2) return Optional.empty();
+        if (tokens.length < 2) return null;
 
         String question = tokens[0];
         String answer = tokens[1];
-        if (shouldIgnore(question, answer)) return Optional.empty();
+        if (shouldIgnore(question, answer)) return null;
 
-        return Optional.of(parseCard(question, answer));
+        //return parseCard(question, answer);
+        return parse(s, question, answer);
     }
 
     private boolean shouldIgnore(String question, String answer) {

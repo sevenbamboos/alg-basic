@@ -1,31 +1,33 @@
-package com.samwang.anki.impl;
+package com.samwang.anki.impl.model;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class Card {
+public class StringListCard implements Card {
     private final CardType type;
     private List<String> fields = new ArrayList<>();
 
-    private Card(CardType aType, String... aFields) {
+    private StringListCard(CardType aType, String... aFields) {
         type = aType;
         fields.addAll(Arrays.asList(aFields));
     }
 
-    public static Card newQuestionAndAnswer(String question, String answer) {
-        return new Card(CardType.QuestionAndAnswer, question, answer);
+    public static StringListCard newQuestionAndAnswer(String question, String answer) {
+        return new StringListCard(CardType.QuestionAndAnswer, question, answer);
     }
 
-    public static Card newCloze(String singleField) {
-        return new Card(CardType.Cloze, singleField);
+    public static StringListCard newCloze(String singleField) {
+        return new StringListCard(CardType.Cloze, singleField);
     }
 
+    @Override
     public CardType getType() {
         return type;
     }
 
-    public Card addField(String field) {
-        fields.add(field);
+    @Override
+    public Card setTags(String tags) {
+        fields.add(tags);
         return this;
     }
 
@@ -33,16 +35,16 @@ public class Card {
         return fields.stream().collect(Collectors.joining(delim));
     }
 
-    public static Card parseCard(String question, String answer) {
+    public static StringListCard parseCard(String question, String answer) {
         List<String> questions = parseQuestion(question);
 
         // question and answer
         if (questions.size() == 1) {
-            return Card.newQuestionAndAnswer(question, answer);
+            return StringListCard.newQuestionAndAnswer(question, answer);
 
         } else { // cloze
             String singleField = parseForCloze(questions, answer);
-            return Card.newCloze(singleField);
+            return StringListCard.newCloze(singleField);
         }
     }
 
@@ -91,5 +93,15 @@ public class Card {
         }
 
         return zip(list1, list2, result);
+    }
+
+    @Override
+    public String source() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public String value() {
+        return getContents("|");
     }
 }
