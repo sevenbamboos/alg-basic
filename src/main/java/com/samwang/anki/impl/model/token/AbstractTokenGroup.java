@@ -7,20 +7,13 @@ import java.util.stream.Collectors;
 abstract class AbstractTokenGroup implements Token {
 
     protected final List<Token> children;
-    protected String contents;
 
-    @Override
-    public void addContent(char c) {
-        contents += c;
-    }
-
-    public AbstractTokenGroup doneToken() {
+    public AbstractTokenGroup doneToken(String contents) {
         return this;
     }
 
     protected AbstractTokenGroup() {
         children = new ArrayList<>();
-        contents = "";
     }
 
     @Override

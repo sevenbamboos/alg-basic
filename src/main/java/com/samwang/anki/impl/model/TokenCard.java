@@ -61,7 +61,7 @@ public class TokenCard implements Card {
     }
 
     public static void main(String[] args) {
-        String question = "token1 *key1 _ key2 _* (com1) token2 *keya _*";
+        String question = "token1 *key1 _ key2 _* (com1) token2 *keya _* (com2) token3 ";
         String answer = "ans1, ans2, ansa";
         String line = question + " | " + answer;
         try {

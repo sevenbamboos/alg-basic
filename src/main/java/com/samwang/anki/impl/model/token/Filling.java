@@ -19,11 +19,6 @@ public class Filling implements Token {
     }
 
     @Override
-    public void addContent(char c) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public String toString() {
         String value = value(null);
         if (filled != null) value += " [filled:" + filled.value(null) + "]";

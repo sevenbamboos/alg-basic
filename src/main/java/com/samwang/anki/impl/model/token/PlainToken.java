@@ -8,13 +8,12 @@ public class PlainToken implements Token {
         this.value = value;
     }
 
-    public boolean isEmpty() {
-        return value == null || value.trim().isEmpty();
+    public void setValue(String value) {
+        this.value = value;
     }
 
-    @Override
-    public void addContent(char c) {
-        value += c;
+    public boolean isEmpty() {
+        return value == null || value.trim().isEmpty();
     }
 
     @Override

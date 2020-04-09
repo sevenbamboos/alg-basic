@@ -18,11 +18,6 @@ public class Filled implements Token {
     }
 
     @Override
-    public void addContent(char c) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public String toString() {
         return value(null);
     }

@@ -7,7 +7,7 @@ import java.util.stream.Collectors;
 public class KeyToken extends AbstractTokenGroup {
 
     @Override
-    public KeyToken doneToken() {
+    public KeyToken doneToken(String contents) {
         String[] tokens = (" " + contents + " ").split("_");
         List<Token> tempTokens = new ArrayList<>();
         if (tokens.length == 0) {
