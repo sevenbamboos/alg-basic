@@ -6,11 +6,36 @@
  * user guide available at https://docs.gradle.org/3.5/userguide/tutorial_java_projects.html
  */
 
+plugins {
+    id("maven-publish")
+}
+
 // Apply the java plugin to add support for Java
 apply plugin: 'java'
 
 // Apply the application plugin to add support for building an application
 apply plugin: 'application'
+
+group = 'samwang'
+version = '0.1.1'
+
+publishing {
+    repositories {
+        maven {
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/sevenbamboos/alg-java")
+            credentials {
+                username = 'sevenbamboos'
+                password = '685c42c2f661aaae1c1ed456826e3aae02c5b6fe'
+            }
+        }
+    }
+    publications {
+        gpr(MavenPublication) {
+            from(components.java)
+        }
+    }
+}
 
 // In this section you declare where to find the dependencies of your project
 repositories {
