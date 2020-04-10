@@ -1,5 +1,7 @@
 package com.samwang.anki.impl.model.token;
 
+import com.samwang.anki.impl.model.CardType;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Stack;
@@ -32,7 +34,9 @@ public class Question extends AbstractTokenGroup {
 
                 if (!stack.isEmpty()) {
                     Token top = stack.pop();
+
                     if (top instanceof PlainToken) {
+                        // stop the current text
                         PlainToken text = (PlainToken) top;
                         if (!buff.isEmpty()) {
                             text.setValue(buff);
@@ -41,15 +45,19 @@ public class Question extends AbstractTokenGroup {
                         stack.push(new KeyToken());
 
                     } else if (top instanceof KeyToken) {
+                        // stop the current key
                         KeyToken key = (KeyToken) top;
                         key.doneToken(buff);
                         children.add(key);
                         keys.add(key);
 
                     } else {
+                        // not support to nest key in another key or comment
                         throw new ParsedException("Can't parse:" + new String(chars));
                     }
+
                 } else {
+                    // key at the beginning
                     stack.push(new KeyToken());
                 }
 
@@ -60,7 +68,9 @@ public class Question extends AbstractTokenGroup {
 
                 if (!stack.isEmpty()) {
                     Token top = stack.pop();
+
                     if (top instanceof PlainToken) {
+                        // stop the current text
                         PlainToken text = (PlainToken) top;
                         if (!buff.isEmpty()) {
                             text.setValue(buff);
@@ -69,9 +79,11 @@ public class Question extends AbstractTokenGroup {
                         stack.push(new Comment());
 
                     } else {
+                        // not support to nest comment in another comment or key
                         throw new ParsedException("Can't parse:" + new String(chars));
                     }
                 } else {
+                    // comment at the beginning
                     stack.push(new Comment());
                 }
 
@@ -82,13 +94,16 @@ public class Question extends AbstractTokenGroup {
 
                 if (!stack.isEmpty()) {
                     Token top = stack.pop();
+
                     if (top instanceof Comment) {
+                        // stop the current comment
                         Comment comment = (Comment) top;
                         comment.setValue(buff);
                         children.add(comment);
                         comments.add(comment);
 
                     } else {
+                        // not support to nest comment in another comment or key
                         throw new ParsedException("Can't parse:" + new String(chars));
                     }
                 } else {
@@ -126,19 +141,55 @@ public class Question extends AbstractTokenGroup {
         }
     }
 
+    @Override
+    public String value(TokenContext ctx) {
+        switch (ctx.type) {
+            case QuestionAndAnswer: {
+
+                String keyPart = keys.stream()
+                    .map(x -> x.value(new TokenContext(" ", CardType.QuestionAndAnswer, true)))
+                    .collect(Collectors.joining(" "));
+
+                String commentPart = comments.stream()
+                    .map(x -> x.value(new TokenContext(" ", CardType.QuestionAndAnswer, true)))
+                    .collect(Collectors.joining(","));
+                commentPart = commentPart.isEmpty() ? "" : "(" + commentPart + ")";
+
+                String sentencePart = children.stream()
+                    .filter(x -> !(x instanceof Comment))
+                    .map(x -> x.value(new TokenContext(" ", CardType.BasicAnswer, false)))
+                    .collect(Collectors.joining(" "));
+
+                return String.format("%s %s %s %s", keyPart, commentPart, ctx.delim, sentencePart);
+            }
+
+            case Cloze:
+                return children.stream()
+                    .map(x -> x.value(ctx))
+                    .collect(Collectors.joining(ctx.delim));
+
+            default:
+                throw new IllegalArgumentException("Unknown card type:" + ctx.type);
+        }
+    }
+
+    @Deprecated
     public String toClozeValue() {
         return children.stream()
             .map(x -> x instanceof KeyToken ? ((KeyToken)x).clozeValue(" ") : x.value(" "))
             .collect(Collectors.joining(" "));
     }
 
+    @Deprecated
     public String toBasicValue(String delim) {
         String keyPart = keys.stream()
             .map(x -> x.filledValue(" "))
-            .collect(Collectors.joining(", "));
+            .collect(Collectors.joining(" "));
+
         String commentPart = comments.stream()
             .map(x -> x.value(delim))
             .collect(Collectors.joining(" "));
+
         String sentencePart = children.stream()
             .filter(x -> !(x instanceof Comment))
             .map(x -> x instanceof KeyToken ? ((KeyToken)x).filledValue(" ") : x.value(" "))

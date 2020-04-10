@@ -21,7 +21,7 @@ public class AnkiFileWriter {
     private final File outputFolder;
     private final List<CardGroup> groups;
     private static final boolean outputByType = true;
-    private static final DateFormat dateFormat = new SimpleDateFormat("YYYY-MM-DD-HH-mm-ss");
+    private static final DateFormat dateFormat = new SimpleDateFormat("YYYY-MM-dd-HH-mm-ss");
 
     public AnkiFileWriter(Path root, List<CardGroup> groups) {
         this.outputFolder = new File(root.toFile(), "anki-out");

@@ -31,9 +31,10 @@ public class KeyToken extends AbstractTokenGroup {
     }
 
     public int filled(List<Token> fillings, int index) throws ParsedException {
-        if (fillings.size() <= index) {
-            throw new ParsedException("toBeFilled is more than fillings:" + (index+1) + ">" + fillings.size());
+        if (index >= fillings.size()) {
+            return index;
         }
+
         fillings = fillings.subList(index, fillings.size());
 
         List<Filling> toBeFilleds = children.stream()
@@ -49,13 +50,15 @@ public class KeyToken extends AbstractTokenGroup {
             toBeFilleds.get(i).setFilled(fillings.get(i));
         }
 
-//        if (i < fillings.size()) {
-//            throw new ParsedException("toBeFilled is less than fillings:" + i + "<" + fillings.size());
-//        }
-
-        return i;
+        return i + index;
     }
 
+    @Override
+    public String value(TokenContext ctx) {
+        return children.stream().map(x -> x.value(ctx)).collect(Collectors.joining(ctx.delim));
+    }
+
+    @Deprecated
     public String clozeValue(String delim) {
         return children.stream()
             .map(x -> x instanceof Filling ? ((Filling)x).getFilled() : x)
@@ -63,6 +66,7 @@ public class KeyToken extends AbstractTokenGroup {
             .collect(Collectors.joining(delim));
     }
 
+    @Deprecated
     public String filledValue(String delim) {
         return children.stream()
             .map(x -> x instanceof Filling ? ((Filling)x).getFilled().toOriginalAnswer() : x.value(delim))
@@ -71,7 +75,7 @@ public class KeyToken extends AbstractTokenGroup {
 
     @Override
     public String toString() {
-        String s = children.stream().map(x -> x.toString()).collect(Collectors.joining(";"));
+        String s = children.stream().map(Object::toString).collect(Collectors.joining(";"));
         return "*" + s + "*";
     }
 }

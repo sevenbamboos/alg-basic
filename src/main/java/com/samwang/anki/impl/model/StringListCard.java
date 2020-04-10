@@ -54,7 +54,7 @@ public class StringListCard implements Card {
         String[] ss = s.split("_");
 
         return Arrays.asList(ss).stream()
-            .map(item -> item.trim())
+            .map(String::trim)
             .filter(item -> !item.isEmpty())
             .collect(Collectors.toList());
     }
@@ -71,7 +71,7 @@ public class StringListCard implements Card {
         String[] ss = s.split(",");
 
         return Arrays.asList(ss).stream()
-            .map(item -> item.trim())
+            .map(String::trim)
             .filter(item -> !item.isEmpty())
             .map(item -> String.format("{{c1::%s}}", item))
             .collect(Collectors.toList());

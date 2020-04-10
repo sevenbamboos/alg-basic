@@ -14,14 +14,22 @@ public class Filling implements Token {
     }
 
     @Override
+    public String value(TokenContext ctx) {
+        if (filled == null) {
+            throw new RuntimeException("Filling without filled:" + this);
+        }
+        return filled.value(ctx);
+    }
+
+    @Override
     public String value(String delim) {
         return "_";
     }
 
     @Override
     public String toString() {
-        String value = value(null);
-        if (filled != null) value += " [filled:" + filled.value(null) + "]";
+        String value = value("");
+        if (filled != null) value += " [filled:" + filled.value("") + "]";
         return value;
     }
 }

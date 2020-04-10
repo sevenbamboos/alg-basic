@@ -1,12 +1,14 @@
 package com.samwang.anki.impl.model;
 
 import com.samwang.anki.impl.model.token.Answer;
+import com.samwang.anki.impl.model.token.ParsedException;
 import com.samwang.anki.impl.model.token.Question;
+import com.samwang.anki.impl.model.token.TokenContext;
 
 public class TokenCard implements Card {
 
     public final String source;
-    private Exception parsedException;
+    public Exception parsedException;
     private Question question;
     private Answer answer;
     private String tags;
@@ -18,6 +20,22 @@ public class TokenCard implements Card {
     @Override
     public boolean hasError() {
         return parsedException != null;
+    }
+
+    public TokenCard setQuestion(Question question) throws ParsedException {
+        this.question = question;
+        apply();
+        return this;
+    }
+
+    public TokenCard setAnswer(Answer answer) throws ParsedException {
+        this.answer = answer;
+        apply();
+        return this;
+    }
+
+    private void apply() throws ParsedException {
+        if (answer != null && question != null) question.apply(answer);
     }
 
     @Override
@@ -37,23 +55,21 @@ public class TokenCard implements Card {
     }
 
     public String toClozeValue() {
-        return String.format("%s | %s", question.toClozeValue(), tags);
+        return String.format("%s | %s", question.value(new TokenContext(CardType.Cloze)), tags);
     }
 
     public String toBasicValue() {
-        return String.format("%s | %s", question.toBasicValue("|"), tags);
+        return String.format("%s | %s", question.value(new TokenContext("|", CardType.QuestionAndAnswer, false)), tags);
     }
 
     public static TokenCard parse(String line, String questionSource, String answerSource) {
         TokenCard card = new TokenCard(line);
 
         try {
-            card.question = new Question(questionSource);
-            card.answer = new Answer(answerSource);
-            card.question.apply(card.answer);
+            card.setQuestion(new Question(questionSource))
+                .setAnswer(new Answer(answerSource));
 
         } catch (Exception e) {
-            e.printStackTrace();
             card.parsedException = e;
         }
 
@@ -61,8 +77,8 @@ public class TokenCard implements Card {
     }
 
     public static void main(String[] args) {
-        String question = "token1 *key1 _ key2 _* (com1) token2 *keya _* (com2) token3 ";
-        String answer = "ans1, ans2, ansa";
+        String question = "John *_* an amazing tie *on* (try on) *this _* (time).";
+        String answer = "has, morning";
         String line = question + " | " + answer;
         try {
             TokenCard card = parse(line, question, answer);

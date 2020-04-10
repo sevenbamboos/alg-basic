@@ -3,7 +3,6 @@ package com.samwang.anki.impl;
 import java.io.*;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
-import java.util.Date;
 import java.util.Properties;
 
 public class AnkiFileLogger implements Closeable {

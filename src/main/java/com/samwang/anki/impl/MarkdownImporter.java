@@ -2,6 +2,7 @@ package com.samwang.anki.impl;
 
 import com.samwang.anki.impl.model.Card;
 import com.samwang.anki.impl.model.CardGroup;
+import com.samwang.anki.impl.model.TokenCard;
 
 import java.io.IOException;
 import java.nio.file.FileSystems;
@@ -9,7 +10,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 
-import static com.samwang.anki.impl.model.StringListCard.parseCard;
+//import static com.samwang.anki.impl.model.StringListCard.parseCard;
 import static com.samwang.anki.impl.model.TokenCard.parse;
 
 public class MarkdownImporter {
@@ -52,7 +53,7 @@ public class MarkdownImporter {
             }
         }
 
-        groups.forEach(x -> x.setCount());
+        groups.forEach(CardGroup::setCount);
 
         return groups;
     }
@@ -69,7 +70,12 @@ public class MarkdownImporter {
         if (shouldIgnore(question, answer)) return null;
 
         //return parseCard(question, answer);
-        return parse(s, question, answer);
+
+        TokenCard card = parse(s, question, answer);
+        if (card.hasError()) {
+            card.parsedException.printStackTrace();
+        }
+        return card;
     }
 
     private boolean shouldIgnore(String question, String answer) {
